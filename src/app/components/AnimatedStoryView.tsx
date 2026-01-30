@@ -195,7 +195,7 @@ export function AnimatedStoryView({ department, agents = [] }: AnimatedStoryView
   };
 
   return (
-    <div className="w-full">
+    <div className="w-full" style={{ minWidth: '100%', maxWidth: '100%' }}>
       {/* Header with narrative */}
       <div className="text-center mb-6">
         <h3 
@@ -270,13 +270,15 @@ export function AnimatedStoryView({ department, agents = [] }: AnimatedStoryView
         </span>
       </div>
 
-      {/* Main Animation Stage - 100% WIDTH - NO SCALE ANIMATION */}
+      {/* Main Animation Stage - 100% WIDTH - FIXED */}
       <div
         className="relative rounded-2xl overflow-hidden grid grid-cols-2 gap-6 p-6 w-full"
         style={{
           background: 'linear-gradient(135deg, rgba(30, 30, 40, 0.95), rgba(20, 20, 30, 0.98))',
           border: '1px solid rgba(255, 255, 255, 0.1)',
-          minHeight: '520px'
+          minHeight: '520px',
+          minWidth: '100%',
+          maxWidth: '100%'
         }}
       >
         {/* Board Background - Left Column (50%) */}

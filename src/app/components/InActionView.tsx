@@ -12,6 +12,10 @@ export function InActionView({
   department,
   agents
 }: InActionViewProps) {
-  // Render the animated story view with agents data
-  return <AnimatedStoryView department={department} agents={agents} />;
+  // Render the animated story view with agents data - wrapped in fixed width container
+  return (
+    <div className="w-full" style={{ minWidth: '100%', maxWidth: '100%' }}>
+      <AnimatedStoryView department={department} agents={agents} />
+    </div>
+  );
 }
