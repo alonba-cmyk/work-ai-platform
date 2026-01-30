@@ -421,12 +421,19 @@ export function NavigationItemsEditor({ type, title, icon, onNavigateToKnowledge
   };
 
   const handleToggleActive = async (id: string, currentState: boolean) => {
-    const { error } = await supabase
+    console.log('[Toggle] Updating', type, 'id:', id, 'from', currentState, 'to', !currentState);
+    
+    const { data, error } = await supabase
       .from(type)
       .update({ is_active: !currentState })
-      .eq('id', id);
+      .eq('id', id)
+      .select();
 
-    if (!error) {
+    if (error) {
+      console.error('[Toggle] Error:', error);
+      alert('שגיאה בעדכון הסטטוס: ' + error.message);
+    } else {
+      console.log('[Toggle] Success:', data);
       await fetchItems();
     }
   };
