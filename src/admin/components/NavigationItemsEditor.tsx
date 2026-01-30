@@ -98,6 +98,36 @@ export function NavigationItemsEditor({ type, title, icon, onNavigateToKnowledge
   const [linkedVibeApps, setLinkedVibeApps] = useState<string[]>([]);
   const [linkedSidekick, setLinkedSidekick] = useState<string[]>([]);
 
+  // Pending changes (for Save button functionality)
+  const [pendingAdditions, setPendingAdditions] = useState<{
+    products: Set<string>;
+    agents: Set<string>;
+    vibe_apps: Set<string>;
+    sidekick_actions: Set<string>;
+  }>({ products: new Set(), agents: new Set(), vibe_apps: new Set(), sidekick_actions: new Set() });
+  
+  const [pendingRemovals, setPendingRemovals] = useState<{
+    products: Set<string>;
+    agents: Set<string>;
+    vibe_apps: Set<string>;
+    sidekick_actions: Set<string>;
+  }>({ products: new Set(), agents: new Set(), vibe_apps: new Set(), sidekick_actions: new Set() });
+  
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Calculate if there are unsaved changes
+  const hasUnsavedChanges = 
+    pendingAdditions.products.size > 0 || pendingAdditions.agents.size > 0 || 
+    pendingAdditions.vibe_apps.size > 0 || pendingAdditions.sidekick_actions.size > 0 ||
+    pendingRemovals.products.size > 0 || pendingRemovals.agents.size > 0 || 
+    pendingRemovals.vibe_apps.size > 0 || pendingRemovals.sidekick_actions.size > 0;
+
+  const pendingChangesCount = 
+    pendingAdditions.products.size + pendingAdditions.agents.size + 
+    pendingAdditions.vibe_apps.size + pendingAdditions.sidekick_actions.size +
+    pendingRemovals.products.size + pendingRemovals.agents.size + 
+    pendingRemovals.vibe_apps.size + pendingRemovals.sidekick_actions.size;
+
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -145,6 +175,7 @@ export function NavigationItemsEditor({ type, title, icon, onNavigateToKnowledge
   useEffect(() => {
     if (selectedItem) {
       fetchLinkedContent(selectedItem.id);
+      resetPendingChanges(); // Reset pending changes when selecting a new item
     }
   }, [selectedItem]);
 
@@ -201,29 +232,114 @@ export function NavigationItemsEditor({ type, title, icon, onNavigateToKnowledge
     }
   };
 
-  const toggleLink = async (contentType: 'products' | 'agents' | 'vibe_apps' | 'sidekick_actions', contentId: string, isLinked: boolean) => {
+  // Reset pending changes when item changes
+  const resetPendingChanges = () => {
+    setPendingAdditions({ products: new Set(), agents: new Set(), vibe_apps: new Set(), sidekick_actions: new Set() });
+    setPendingRemovals({ products: new Set(), agents: new Set(), vibe_apps: new Set(), sidekick_actions: new Set() });
+  };
+
+  const toggleLink = (contentType: 'products' | 'agents' | 'vibe_apps' | 'sidekick_actions', contentId: string, isLinked: boolean) => {
     if (!selectedItem) return;
 
-    const tableName = getJunctionTableName(contentType);
+    // Get the original linked state (from DB)
+    const originalLinked = contentType === 'products' ? linkedProducts :
+                           contentType === 'agents' ? linkedAgents :
+                           contentType === 'vibe_apps' ? linkedVibeApps : linkedSidekick;
+    const wasOriginallyLinked = originalLinked.includes(contentId);
+
+    setPendingAdditions(prev => {
+      const newSet = new Set(prev[contentType]);
+      if (!isLinked && !wasOriginallyLinked) {
+        // Adding a new link that wasn't in DB
+        newSet.add(contentId);
+      } else {
+        // Remove from additions if we're unlinking
+        newSet.delete(contentId);
+      }
+      return { ...prev, [contentType]: newSet };
+    });
+
+    setPendingRemovals(prev => {
+      const newSet = new Set(prev[contentType]);
+      if (isLinked && wasOriginallyLinked) {
+        // Removing a link that was in DB
+        newSet.add(contentId);
+      } else {
+        // Remove from removals if we're re-linking
+        newSet.delete(contentId);
+      }
+      return { ...prev, [contentType]: newSet };
+    });
+  };
+
+  // Check if an item is currently linked (considering pending changes)
+  const isItemLinked = (contentType: 'products' | 'agents' | 'vibe_apps' | 'sidekick_actions', contentId: string): boolean => {
+    const originalLinked = contentType === 'products' ? linkedProducts :
+                           contentType === 'agents' ? linkedAgents :
+                           contentType === 'vibe_apps' ? linkedVibeApps : linkedSidekick;
+    const wasOriginallyLinked = originalLinked.includes(contentId);
+    const isPendingAddition = pendingAdditions[contentType].has(contentId);
+    const isPendingRemoval = pendingRemovals[contentType].has(contentId);
+
+    if (isPendingAddition) return true;
+    if (isPendingRemoval) return false;
+    return wasOriginallyLinked;
+  };
+
+  // Save all pending changes to Supabase
+  const handleSaveLinks = async () => {
+    if (!selectedItem || !hasUnsavedChanges) return;
+
+    setIsSaving(true);
     const idField = getIdFieldName();
-    const contentIdField = contentType === 'products' ? 'product_id' : 
-                           contentType === 'agents' ? 'agent_id' :
-                           contentType === 'vibe_apps' ? 'vibe_app_id' : 'sidekick_action_id';
 
     try {
-      if (isLinked) {
-        // Remove link
-        await supabase.from(tableName).delete().eq(idField, selectedItem.id).eq(contentIdField, contentId);
-      } else {
-        // Add link
-        await supabase.from(tableName).insert({ [idField]: selectedItem.id, [contentIdField]: contentId });
+      const promises: Promise<any>[] = [];
+
+      // Process each content type
+      const contentTypes: Array<'products' | 'agents' | 'vibe_apps' | 'sidekick_actions'> = ['products', 'agents', 'vibe_apps', 'sidekick_actions'];
+      
+      for (const contentType of contentTypes) {
+        const tableName = getJunctionTableName(contentType);
+        const contentIdField = contentType === 'products' ? 'product_id' : 
+                               contentType === 'agents' ? 'agent_id' :
+                               contentType === 'vibe_apps' ? 'vibe_app_id' : 'sidekick_action_id';
+
+        // Handle removals
+        for (const contentId of pendingRemovals[contentType]) {
+          promises.push(
+            supabase.from(tableName).delete().eq(idField, selectedItem.id).eq(contentIdField, contentId)
+          );
+        }
+
+        // Handle additions
+        for (const contentId of pendingAdditions[contentType]) {
+          promises.push(
+            supabase.from(tableName).insert({ [idField]: selectedItem.id, [contentIdField]: contentId })
+          );
+        }
       }
 
-      // Refresh linked content
-      fetchLinkedContent(selectedItem.id);
+      await Promise.all(promises);
+
+      // Refresh linked content and reset pending changes
+      await fetchLinkedContent(selectedItem.id);
+      resetPendingChanges();
     } catch (error) {
-      console.error('Error toggling link:', error);
+      console.error('Error saving links:', error);
+      alert('Error saving changes. Please try again.');
+    } finally {
+      setIsSaving(false);
     }
+  };
+
+  // Discard pending changes
+  const handleDiscardChanges = () => {
+    if (hasUnsavedChanges && !confirm('Are you sure you want to discard unsaved changes?')) {
+      return false;
+    }
+    resetPendingChanges();
+    return true;
   };
 
   const resetForm = () => {
@@ -385,8 +501,10 @@ export function NavigationItemsEditor({ type, title, icon, onNavigateToKnowledge
         <div className="flex items-center gap-4 mb-6">
           <button
             onClick={() => {
-              setSelectedItem(null);
-              setActiveTab('overview');
+              if (handleDiscardChanges()) {
+                setSelectedItem(null);
+                setActiveTab('overview');
+              }
             }}
             className="p-2 hover:bg-gray-800 rounded-lg transition-colors"
           >
@@ -516,51 +634,89 @@ export function NavigationItemsEditor({ type, title, icon, onNavigateToKnowledge
                 </button>
               </div>
             ) : (
-              <div className="grid grid-cols-2 gap-3">
-                {currentContent.items.map(content => {
-                  const isLinked = currentContent.linked.includes(content.id);
-                  const tabIcon = getContentIcon(activeTab);
-                  
-                  return (
-                    <button
-                      key={content.id}
-                      onClick={() => toggleLink(currentContent.type, content.id, isLinked)}
-                      className={`flex items-center gap-4 p-4 rounded-xl border transition-all ${
-                        isLinked
-                          ? 'bg-indigo-600/20 border-indigo-500 text-white'
-                          : 'bg-gray-900 border-gray-700 text-gray-300 hover:border-gray-600'
-                      }`}
-                    >
-                      <div className="w-10 h-10 rounded-lg bg-gray-800 flex items-center justify-center overflow-hidden">
-                        {(() => {
-                          const productIcon = getProductIcon(content.name);
-                          // Priority for Products: 1) Product icon by name, 2) DB image, 3) Lucide fallback
-                          // Priority for other tabs: 1) Tab default icon, 2) DB image, 3) Lucide fallback
-                          if (activeTab === 'products' && productIcon) {
-                            return <img src={productIcon} alt="" className="w-8 h-8 object-contain" />;
-                          } else if (tabIcon) {
-                            return <img src={tabIcon} alt="" className="w-8 h-8 object-contain" />;
-                          } else if (content.image) {
-                            return <img src={content.image} alt="" className="w-8 h-8 object-contain" />;
-                          } else {
-                            return <Package className="w-5 h-5 text-gray-500" />;
-                          }
-                        })()}
-                      </div>
-                      <div className="flex-1 text-left">
-                        <p className="font-medium">{content.name}</p>
-                        {content.description && (
-                          <p className="text-sm text-gray-400 truncate">{content.description}</p>
-                        )}
-                      </div>
-                      {isLinked && (
-                        <div className="w-6 h-6 bg-indigo-600 rounded-full flex items-center justify-center">
-                          <Check className="w-4 h-4 text-white" />
+              <div>
+                <div className="grid grid-cols-2 gap-3">
+                  {currentContent.items.map(content => {
+                    const isLinked = isItemLinked(currentContent.type, content.id);
+                    const tabIcon = getContentIcon(activeTab);
+                    
+                    return (
+                      <button
+                        key={content.id}
+                        onClick={() => toggleLink(currentContent.type, content.id, isLinked)}
+                        className={`flex items-center gap-4 p-4 rounded-xl border transition-all ${
+                          isLinked
+                            ? 'bg-indigo-600/20 border-indigo-500 text-white'
+                            : 'bg-gray-900 border-gray-700 text-gray-300 hover:border-gray-600'
+                        }`}
+                      >
+                        <div className="w-10 h-10 rounded-lg bg-gray-800 flex items-center justify-center overflow-hidden">
+                          {(() => {
+                            const productIcon = getProductIcon(content.name);
+                            // Priority for Products: 1) Product icon by name, 2) DB image, 3) Lucide fallback
+                            // Priority for other tabs: 1) Tab default icon, 2) DB image, 3) Lucide fallback
+                            if (activeTab === 'products' && productIcon) {
+                              return <img src={productIcon} alt="" className="w-8 h-8 object-contain" />;
+                            } else if (tabIcon) {
+                              return <img src={tabIcon} alt="" className="w-8 h-8 object-contain" />;
+                            } else if (content.image) {
+                              return <img src={content.image} alt="" className="w-8 h-8 object-contain" />;
+                            } else {
+                              return <Package className="w-5 h-5 text-gray-500" />;
+                            }
+                          })()}
                         </div>
-                      )}
-                    </button>
-                  );
-                })}
+                        <div className="flex-1 text-left">
+                          <p className="font-medium">{content.name}</p>
+                          {content.description && (
+                            <p className="text-sm text-gray-400 truncate">{content.description}</p>
+                          )}
+                        </div>
+                        {isLinked && (
+                          <div className="w-6 h-6 bg-indigo-600 rounded-full flex items-center justify-center">
+                            <Check className="w-4 h-4 text-white" />
+                          </div>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Save/Discard Buttons */}
+                {hasUnsavedChanges && (
+                  <div className="mt-6 p-4 bg-gray-800/50 border border-gray-700 rounded-xl">
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm text-amber-400">
+                        {pendingChangesCount} unsaved change{pendingChangesCount !== 1 ? 's' : ''}
+                      </p>
+                      <div className="flex gap-3">
+                        <button
+                          onClick={() => handleDiscardChanges()}
+                          className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-lg transition-colors"
+                        >
+                          Discard
+                        </button>
+                        <button
+                          onClick={handleSaveLinks}
+                          disabled={isSaving}
+                          className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-800 disabled:cursor-not-allowed text-white rounded-lg transition-colors"
+                        >
+                          {isSaving ? (
+                            <>
+                              <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                              Saving...
+                            </>
+                          ) : (
+                            <>
+                              <Save className="w-4 h-4" />
+                              Save Changes
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>

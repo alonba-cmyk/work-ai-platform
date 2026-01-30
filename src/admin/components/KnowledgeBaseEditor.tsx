@@ -141,6 +141,36 @@ export function KnowledgeBaseEditor({ defaultTab, onTabChange, onBack }: Knowled
   const [linkedPainPoints, setLinkedPainPoints] = useState<string[]>([]);
   const [linkedAITrans, setLinkedAITrans] = useState<string[]>([]);
 
+  // Pending changes for Intent Type assignments (for Save button functionality)
+  const [pendingIntentAdditions, setPendingIntentAdditions] = useState<{
+    departments: Set<string>;
+    outcomes: Set<string>;
+    pain_points: Set<string>;
+    ai_transformations: Set<string>;
+  }>({ departments: new Set(), outcomes: new Set(), pain_points: new Set(), ai_transformations: new Set() });
+  
+  const [pendingIntentRemovals, setPendingIntentRemovals] = useState<{
+    departments: Set<string>;
+    outcomes: Set<string>;
+    pain_points: Set<string>;
+    ai_transformations: Set<string>;
+  }>({ departments: new Set(), outcomes: new Set(), pain_points: new Set(), ai_transformations: new Set() });
+  
+  const [isSavingIntents, setIsSavingIntents] = useState(false);
+
+  // Calculate if there are unsaved intent changes
+  const hasUnsavedIntentChanges = 
+    pendingIntentAdditions.departments.size > 0 || pendingIntentAdditions.outcomes.size > 0 || 
+    pendingIntentAdditions.pain_points.size > 0 || pendingIntentAdditions.ai_transformations.size > 0 ||
+    pendingIntentRemovals.departments.size > 0 || pendingIntentRemovals.outcomes.size > 0 || 
+    pendingIntentRemovals.pain_points.size > 0 || pendingIntentRemovals.ai_transformations.size > 0;
+
+  const pendingIntentChangesCount = 
+    pendingIntentAdditions.departments.size + pendingIntentAdditions.outcomes.size + 
+    pendingIntentAdditions.pain_points.size + pendingIntentAdditions.ai_transformations.size +
+    pendingIntentRemovals.departments.size + pendingIntentRemovals.outcomes.size + 
+    pendingIntentRemovals.pain_points.size + pendingIntentRemovals.ai_transformations.size;
+
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -258,7 +288,12 @@ export function KnowledgeBaseEditor({ defaultTab, onTabChange, onBack }: Knowled
     setItemLinks(links);
   };
 
-  const resetForm = () => {
+  const resetForm = (skipWarning = false) => {
+    // Check for unsaved changes before resetting
+    if (!skipWarning && hasUnsavedIntentChanges && !confirm('You have unsaved assignment changes. Discard them?')) {
+      return;
+    }
+    
     setFormData({
       name: '',
       description: '',
@@ -269,6 +304,7 @@ export function KnowledgeBaseEditor({ defaultTab, onTabChange, onBack }: Knowled
     setShowAddForm(false);
     setEditingId(null);
     clearLinkedIntentTypes();
+    resetPendingIntentChanges();
   };
 
   const handleAdd = async () => {
@@ -379,13 +415,70 @@ export function KnowledgeBaseEditor({ defaultTab, onTabChange, onBack }: Knowled
     setLinkedAITrans([]);
   };
 
-  // Toggle Intent Type link for the currently edited item
-  const toggleIntentLink = async (
+  // Reset pending intent changes
+  const resetPendingIntentChanges = () => {
+    setPendingIntentAdditions({ departments: new Set(), outcomes: new Set(), pain_points: new Set(), ai_transformations: new Set() });
+    setPendingIntentRemovals({ departments: new Set(), outcomes: new Set(), pain_points: new Set(), ai_transformations: new Set() });
+  };
+
+  // Toggle Intent Type link for the currently edited item (updates local state only)
+  const toggleIntentLink = (
     intentType: 'departments' | 'outcomes' | 'pain_points' | 'ai_transformations',
     intentId: string,
     isCurrentlyLinked: boolean
   ) => {
     if (!editingId) return;
+
+    // Get the original linked state (from DB)
+    const originalLinked = intentType === 'departments' ? linkedDepts :
+                           intentType === 'outcomes' ? linkedOutcomes :
+                           intentType === 'pain_points' ? linkedPainPoints : linkedAITrans;
+    const wasOriginallyLinked = originalLinked.includes(intentId);
+
+    setPendingIntentAdditions(prev => {
+      const newSet = new Set(prev[intentType]);
+      if (!isCurrentlyLinked && !wasOriginallyLinked) {
+        // Adding a new link that wasn't in DB
+        newSet.add(intentId);
+      } else {
+        // Remove from additions if we're unlinking
+        newSet.delete(intentId);
+      }
+      return { ...prev, [intentType]: newSet };
+    });
+
+    setPendingIntentRemovals(prev => {
+      const newSet = new Set(prev[intentType]);
+      if (isCurrentlyLinked && wasOriginallyLinked) {
+        // Removing a link that was in DB
+        newSet.add(intentId);
+      } else {
+        // Remove from removals if we're re-linking
+        newSet.delete(intentId);
+      }
+      return { ...prev, [intentType]: newSet };
+    });
+  };
+
+  // Check if an intent is currently linked (considering pending changes)
+  const isIntentLinked = (intentType: 'departments' | 'outcomes' | 'pain_points' | 'ai_transformations', intentId: string): boolean => {
+    const originalLinked = intentType === 'departments' ? linkedDepts :
+                           intentType === 'outcomes' ? linkedOutcomes :
+                           intentType === 'pain_points' ? linkedPainPoints : linkedAITrans;
+    const wasOriginallyLinked = originalLinked.includes(intentId);
+    const isPendingAddition = pendingIntentAdditions[intentType].has(intentId);
+    const isPendingRemoval = pendingIntentRemovals[intentType].has(intentId);
+
+    if (isPendingAddition) return true;
+    if (isPendingRemoval) return false;
+    return wasOriginallyLinked;
+  };
+
+  // Save all pending intent changes to Supabase
+  const handleSaveIntentLinks = async () => {
+    if (!editingId || !hasUnsavedIntentChanges) return;
+
+    setIsSavingIntents(true);
 
     const contentType = activeTab === 'vibeapps' ? 'vibe_apps' : 
                         activeTab === 'sidekick' ? 'sidekick_actions' : activeTab;
@@ -394,77 +487,72 @@ export function KnowledgeBaseEditor({ defaultTab, onTabChange, onBack }: Knowled
                         activeTab === 'agents' ? 'agent_id' :
                         activeTab === 'vibeapps' ? 'vibe_app_id' : 'sidekick_action_id';
 
-    // Get the correct junction table and intent ID field
-    let junctionTable: string;
-    let intentIdField: string;
-
-    switch (intentType) {
-      case 'departments':
-        junctionTable = `department_${contentType}`;
-        intentIdField = 'department_id';
-        break;
-      case 'outcomes':
-        junctionTable = `outcome_${contentType}`;
-        intentIdField = 'outcome_id';
-        break;
-      case 'pain_points':
-        junctionTable = `pain_point_${contentType}`;
-        intentIdField = 'pain_point_id';
-        break;
-      case 'ai_transformations':
-        junctionTable = `ai_transformation_${contentType}`;
-        intentIdField = 'ai_transformation_id';
-        break;
-    }
-
     try {
-      if (isCurrentlyLinked) {
-        // Remove link
-        await supabase
-          .from(junctionTable)
-          .delete()
-          .eq(intentIdField, intentId)
-          .eq(idFieldName, editingId);
-      } else {
-        // Add link
-        await supabase
-          .from(junctionTable)
-          .insert({ [intentIdField]: intentId, [idFieldName]: editingId });
+      const promises: Promise<any>[] = [];
+
+      // Process each intent type
+      const intentTypes: Array<'departments' | 'outcomes' | 'pain_points' | 'ai_transformations'> = 
+        ['departments', 'outcomes', 'pain_points', 'ai_transformations'];
+      
+      for (const intentType of intentTypes) {
+        let junctionTable: string;
+        let intentIdField: string;
+
+        switch (intentType) {
+          case 'departments':
+            junctionTable = `department_${contentType}`;
+            intentIdField = 'department_id';
+            break;
+          case 'outcomes':
+            junctionTable = `outcome_${contentType}`;
+            intentIdField = 'outcome_id';
+            break;
+          case 'pain_points':
+            junctionTable = `pain_point_${contentType}`;
+            intentIdField = 'pain_point_id';
+            break;
+          case 'ai_transformations':
+            junctionTable = `ai_transformation_${contentType}`;
+            intentIdField = 'ai_transformation_id';
+            break;
+        }
+
+        // Handle removals
+        for (const intentId of pendingIntentRemovals[intentType]) {
+          promises.push(
+            supabase.from(junctionTable).delete().eq(intentIdField, intentId).eq(idFieldName, editingId)
+          );
+        }
+
+        // Handle additions
+        for (const intentId of pendingIntentAdditions[intentType]) {
+          promises.push(
+            supabase.from(junctionTable).insert({ [intentIdField]: intentId, [idFieldName]: editingId })
+          );
+        }
       }
 
-      // Update local state
-      switch (intentType) {
-        case 'departments':
-          setLinkedDepts(prev => isCurrentlyLinked 
-            ? prev.filter(id => id !== intentId)
-            : [...prev, intentId]
-          );
-          break;
-        case 'outcomes':
-          setLinkedOutcomes(prev => isCurrentlyLinked 
-            ? prev.filter(id => id !== intentId)
-            : [...prev, intentId]
-          );
-          break;
-        case 'pain_points':
-          setLinkedPainPoints(prev => isCurrentlyLinked 
-            ? prev.filter(id => id !== intentId)
-            : [...prev, intentId]
-          );
-          break;
-        case 'ai_transformations':
-          setLinkedAITrans(prev => isCurrentlyLinked 
-            ? prev.filter(id => id !== intentId)
-            : [...prev, intentId]
-          );
-          break;
-      }
+      await Promise.all(promises);
 
-      // Refresh item links display
+      // Refresh linked intents and reset pending changes
+      await fetchItemIntentLinks(editingId);
       await fetchItemLinks(items.map(i => i.id));
+      resetPendingIntentChanges();
     } catch (error) {
-      console.error('Error toggling Intent link:', error);
+      console.error('Error saving intent links:', error);
+      alert('Error saving changes. Please try again.');
+    } finally {
+      setIsSavingIntents(false);
     }
+  };
+
+  // Discard pending intent changes
+  const handleDiscardIntentChanges = () => {
+    if (hasUnsavedIntentChanges && !confirm('Are you sure you want to discard unsaved changes?')) {
+      return false;
+    }
+    resetPendingIntentChanges();
+    return true;
   };
 
   return (
@@ -616,7 +704,7 @@ export function KnowledgeBaseEditor({ defaultTab, onTabChange, onBack }: Knowled
                     </div>
                     <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto">
                       {allDepartments.map(dept => {
-                        const isLinked = linkedDepts.includes(dept.id);
+                        const isLinked = isIntentLinked('departments', dept.id);
                         return (
                           <button
                             key={dept.id}
@@ -647,7 +735,7 @@ export function KnowledgeBaseEditor({ defaultTab, onTabChange, onBack }: Knowled
                     </div>
                     <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto">
                       {allOutcomes.map(outcome => {
-                        const isLinked = linkedOutcomes.includes(outcome.id);
+                        const isLinked = isIntentLinked('outcomes', outcome.id);
                         return (
                           <button
                             key={outcome.id}
@@ -678,7 +766,7 @@ export function KnowledgeBaseEditor({ defaultTab, onTabChange, onBack }: Knowled
                     </div>
                     <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto">
                       {allPainPoints.map(painPoint => {
-                        const isLinked = linkedPainPoints.includes(painPoint.id);
+                        const isLinked = isIntentLinked('pain_points', painPoint.id);
                         return (
                           <button
                             key={painPoint.id}
@@ -709,7 +797,7 @@ export function KnowledgeBaseEditor({ defaultTab, onTabChange, onBack }: Knowled
                     </div>
                     <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto">
                       {allAITransformations.map(aiTrans => {
-                        const isLinked = linkedAITrans.includes(aiTrans.id);
+                        const isLinked = isIntentLinked('ai_transformations', aiTrans.id);
                         return (
                           <button
                             key={aiTrans.id}
@@ -731,6 +819,44 @@ export function KnowledgeBaseEditor({ defaultTab, onTabChange, onBack }: Knowled
                     </div>
                   </div>
                 </div>
+
+                {/* Save/Discard Intent Changes */}
+                {hasUnsavedIntentChanges && (
+                  <div className="mt-4 p-4 bg-gray-700/50 border border-amber-600/30 rounded-xl">
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm text-amber-400">
+                        {pendingIntentChangesCount} unsaved assignment{pendingIntentChangesCount !== 1 ? 's' : ''}
+                      </p>
+                      <div className="flex gap-3">
+                        <button
+                          type="button"
+                          onClick={() => handleDiscardIntentChanges()}
+                          className="px-3 py-1.5 bg-gray-600 hover:bg-gray-500 text-gray-300 rounded-lg text-sm transition-colors"
+                        >
+                          Discard
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleSaveIntentLinks}
+                          disabled={isSavingIntents}
+                          className="flex items-center gap-2 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-800 disabled:cursor-not-allowed text-white rounded-lg text-sm transition-colors"
+                        >
+                          {isSavingIntents ? (
+                            <>
+                              <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                              Saving...
+                            </>
+                          ) : (
+                            <>
+                              <Save className="w-3 h-3" />
+                              Save Assignments
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
