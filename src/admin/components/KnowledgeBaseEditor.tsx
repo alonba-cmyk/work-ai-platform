@@ -474,6 +474,124 @@ export function KnowledgeBaseEditor({ defaultTab, onTabChange, onBack }: Knowled
     }
   };
 
+  // Expand a single item into separate variations per department
+  const handleExpandToVariations = async () => {
+    if (!editingId) return;
+    
+    // Get current linked departments (including pending additions, excluding pending removals)
+    const currentDepts = [...linkedDepts];
+    pendingIntentAdditions.departments.forEach(d => {
+      if (!currentDepts.includes(d)) currentDepts.push(d);
+    });
+    const finalDepts = currentDepts.filter(d => !pendingIntentRemovals.departments.has(d));
+    
+    if (finalDepts.length < 2) {
+      alert('צריך לפחות 2 מחלקות כדי ליצור וריאציות');
+      return;
+    }
+
+    if (!confirm(`פעולה זו תיצור ${finalDepts.length} רשומות נפרדות - אחת לכל מחלקה.\nכל אחת תקבל עותק של התיאור הנוכחי ותוכל להיערך בנפרד.\n\nלהמשיך?`)) {
+      return;
+    }
+
+    const contentType = activeTab === 'vibeapps' ? 'vibe_apps' : 
+                        activeTab === 'sidekick' ? 'sidekick_actions' : activeTab;
+    const idFieldName = activeTab === 'products' ? 'product_id' :
+                        activeTab === 'agents' ? 'agent_id' :
+                        activeTab === 'vibeapps' ? 'vibe_app_id' : 'sidekick_action_id';
+
+    try {
+      // Get current item data
+      const { data: currentItem } = await supabase
+        .from(currentTab.table)
+        .select('*')
+        .eq('id', editingId)
+        .single();
+
+      if (!currentItem) {
+        alert('שגיאה: לא נמצא הפריט');
+        return;
+      }
+
+      // Get current links (outcomes, pain points, AI transformations)
+      const [outcomeLinks, painPointLinks, aiTransLinks] = await Promise.all([
+        supabase.from(`outcome_${contentType}`).select('outcome_id').eq(idFieldName, editingId),
+        supabase.from(`pain_point_${contentType}`).select('pain_point_id').eq(idFieldName, editingId),
+        supabase.from(`ai_transformation_${contentType}`).select('ai_transformation_id').eq(idFieldName, editingId),
+      ]);
+
+      const outcomeIds = (outcomeLinks.data || []).map((l: any) => l.outcome_id);
+      const painPointIds = (painPointLinks.data || []).map((l: any) => l.pain_point_id);
+      const aiTransIds = (aiTransLinks.data || []).map((l: any) => l.ai_transformation_id);
+
+      // Keep first department on original item, create new items for the rest
+      const [firstDept, ...otherDepts] = finalDepts;
+
+      // Update original item to only link to first department
+      await supabase.from(`department_${contentType}`).delete().eq(idFieldName, editingId);
+      await supabase.from(`department_${contentType}`).insert({
+        [idFieldName]: editingId,
+        department_id: firstDept
+      });
+
+      // Create new items for other departments
+      for (const deptId of otherDepts) {
+        // Create new item with same data
+        const newItemData = {
+          name: currentItem.name,
+          description: currentItem.description || formData.description,
+          value: currentItem.value || formData.value,
+          image: currentItem.image || formData.image,
+        };
+
+        const { data: newItem, error: insertError } = await supabase
+          .from(currentTab.table)
+          .insert(newItemData)
+          .select()
+          .single();
+
+        if (insertError || !newItem) {
+          console.error('Error creating variation:', insertError);
+          continue;
+        }
+
+        // Link to this department
+        await supabase.from(`department_${contentType}`).insert({
+          [idFieldName]: newItem.id,
+          department_id: deptId
+        });
+
+        // Copy other links
+        for (const outcomeId of outcomeIds) {
+          await supabase.from(`outcome_${contentType}`).insert({
+            [idFieldName]: newItem.id,
+            outcome_id: outcomeId
+          });
+        }
+        for (const painPointId of painPointIds) {
+          await supabase.from(`pain_point_${contentType}`).insert({
+            [idFieldName]: newItem.id,
+            pain_point_id: painPointId
+          });
+        }
+        for (const aiTransId of aiTransIds) {
+          await supabase.from(`ai_transformation_${contentType}`).insert({
+            [idFieldName]: newItem.id,
+            ai_transformation_id: aiTransId
+          });
+        }
+      }
+
+      // Refresh and close modal
+      await fetchItems();
+      resetForm(true);
+      alert(`נוצרו ${finalDepts.length} וריאציות בהצלחה!`);
+    } catch (error) {
+      console.error('Error expanding to variations:', error);
+      alert('שגיאה ביצירת הווריאציות');
+    }
+  };
+
   const startEdit = async (item: ContentItem) => {
     setEditingId(item.id);
     setFormData({
@@ -1002,6 +1120,39 @@ export function KnowledgeBaseEditor({ defaultTab, onTabChange, onBack }: Knowled
                         <span className="text-gray-500 text-xs">No departments available</span>
                       )}
                     </div>
+                    
+                    {/* Expand to Variations button - show when editing and 2+ departments linked */}
+                    {editingId && (() => {
+                      // Calculate effective linked departments count
+                      const currentDepts = [...linkedDepts];
+                      pendingIntentAdditions.departments.forEach(d => {
+                        if (!currentDepts.includes(d)) currentDepts.push(d);
+                      });
+                      const effectiveCount = currentDepts.filter(d => !pendingIntentRemovals.departments.has(d)).length;
+                      
+                      if (effectiveCount >= 2) {
+                        return (
+                          <div className="mt-3 p-3 bg-indigo-500/10 border border-indigo-500/30 rounded-lg">
+                            <div className="flex items-center justify-between">
+                              <div className="flex-1">
+                                <p className="text-xs text-indigo-300">
+                                  פריט זה משויך ל-{effectiveCount} מחלקות. 
+                                  ניתן ליצור וריאציה נפרדת לכל מחלקה עם תיאור ייחודי.
+                                </p>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={handleExpandToVariations}
+                                className="ml-3 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs rounded-lg transition-colors whitespace-nowrap"
+                              >
+                                הרחב לווריאציות
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      }
+                      return null;
+                    })()}
                   </div>
 
                   {/* Outcomes */}
