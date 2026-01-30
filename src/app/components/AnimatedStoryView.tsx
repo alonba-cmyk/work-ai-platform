@@ -414,20 +414,33 @@ export function AnimatedStoryView({ department, agents = [] }: AnimatedStoryView
                 className="h-full flex flex-col min-h-[460px]"
               >
                 <div 
-                  className="flex-1 rounded-xl p-4 flex flex-col"
+                  className="flex-1 rounded-xl p-4 flex flex-col relative"
                   style={{
-                    background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(249, 115, 22, 0.15))',
-                    border: '1px solid rgba(245, 158, 11, 0.3)'
+                    background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(240, 240, 245, 0.9))',
+                    border: '2px solid transparent',
+                    backgroundClip: 'padding-box',
+                    position: 'relative'
                   }}
                 >
+                  {/* Gradient border overlay */}
+                  <div 
+                    className="absolute inset-0 rounded-xl -z-10"
+                    style={{
+                      background: 'linear-gradient(135deg, #ec4899, #f59e0b)',
+                      margin: '-2px',
+                      borderRadius: 'inherit',
+                      filter: 'blur(0px)',
+                      boxShadow: '0 0 30px rgba(236, 72, 153, 0.3), 0 0 60px rgba(245, 158, 11, 0.2)'
+                    }}
+                  />
                   {/* Sidekick Header */}
-                  <div className="flex items-center gap-3 mb-4 pb-3 border-b border-white/10">
+                  <div className="flex items-center gap-3 mb-4 pb-3 border-b border-gray-200">
                     <div className="w-10 h-10 rounded-lg overflow-hidden">
                       <img src={sidekickLogo} alt="Sidekick" className="w-full h-full object-contain" />
                     </div>
                     <div>
-                      <span className="text-white font-semibold">Sidekick</span>
-                      <div className="text-amber-400 text-xs">Your AI Assistant</div>
+                      <span className="text-gray-800 font-semibold">Sidekick</span>
+                      <div className="text-amber-600 text-xs">Your AI Assistant</div>
                     </div>
                   </div>
                   
@@ -457,18 +470,18 @@ export function AnimatedStoryView({ department, agents = [] }: AnimatedStoryView
                           animate={{ opacity: 1, y: 0 }}
                           className="flex justify-start"
                         >
-                          <div className="bg-white/10 rounded-2xl rounded-bl-md px-4 py-3 max-w-[90%]">
-                            <p className="text-white text-sm">
+                          <div className="bg-gray-100 rounded-2xl rounded-bl-md px-4 py-3 max-w-[90%] shadow-sm">
+                            <p className="text-gray-800 text-sm">
                               I'll help you set that up! Let me create:
                             </p>
-                            <ul className="text-white/70 text-sm mt-2 space-y-1.5">
+                            <ul className="text-gray-600 text-sm mt-2 space-y-1.5">
                               <motion.li 
                                 initial={{ opacity: 0, x: -10 }}
                                 animate={{ opacity: 1, x: 0 }}
                                 transition={{ delay: 0.3 }}
                                 className="flex items-center gap-2"
                               >
-                                <Mail className="w-3 h-3 text-amber-400" /> Email invitations
+                                <Mail className="w-3 h-3 text-amber-600" /> Email invitations
                               </motion.li>
                               <motion.li 
                                 initial={{ opacity: 0, x: -10 }}
@@ -476,7 +489,7 @@ export function AnimatedStoryView({ department, agents = [] }: AnimatedStoryView
                                 transition={{ delay: 0.5 }}
                                 className="flex items-center gap-2"
                               >
-                                <Share2 className="w-3 h-3 text-amber-400" /> Social media posts
+                                <Share2 className="w-3 h-3 text-amber-600" /> Social media posts
                               </motion.li>
                               <motion.li 
                                 initial={{ opacity: 0, x: -10 }}
@@ -484,7 +497,7 @@ export function AnimatedStoryView({ department, agents = [] }: AnimatedStoryView
                                 transition={{ delay: 0.7 }}
                                 className="flex items-center gap-2"
                               >
-                                <Users className="w-3 h-3 text-amber-400" /> RSVP tracking
+                                <Users className="w-3 h-3 text-amber-600" /> RSVP tracking
                               </motion.li>
                             </ul>
                           </div>
