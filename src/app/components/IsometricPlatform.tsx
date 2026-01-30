@@ -3,9 +3,10 @@ import { SidekickActionModal } from './SidekickActionModal';
 import { AgentModal } from './AgentModal';
 import { VibeAppModal } from './VibeAppModal';
 import { PlatformValuesBar } from './PlatformValuesBar';
+import { InActionView } from './InActionView';
 
 import { motion, AnimatePresence } from 'motion/react';
-import { Box, Cpu, Zap, Plus, ChevronLeft, ChevronRight, TrendingUp, ChevronsLeft, ChevronsRight } from 'lucide-react';
+import { Box, Cpu, Zap, Plus, ChevronLeft, ChevronRight, TrendingUp, ChevronsLeft, ChevronsRight, LayoutGrid, Play } from 'lucide-react';
 import { useState, isValidElement, cloneElement } from 'react';
 import sidekickLogo from '@/assets/1babfe88a809998ec3c5c5d597d8051ef7639a6f.png';
 import agentsLogo from '@/assets/99be461a455ae49743d963276e2023ed6cd1445d.png';
@@ -852,6 +853,9 @@ export function IsometricPlatformVisualization({
     type: null
   });
   
+  // View mode toggle: 'overview' (current) or 'in-action' (demo view)
+  const [viewMode, setViewMode] = useState<'overview' | 'in-action'>('overview');
+  
   const [selectedProductIndex, setSelectedProductIndex] = useState<number | null>(null);
   const [currentVibeIndex, setCurrentVibeIndex] = useState(0);
   const [selectedVibeApp, setSelectedVibeApp] = useState<typeof vibeApps[0] | null>(null);
@@ -1112,12 +1116,12 @@ export function IsometricPlatformVisualization({
                   )}
                 </motion.div>
                 
-                {/* Business Impact Button */}
+                {/* Action Buttons: Business Impact + View Toggle */}
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.4, duration: 0.6 }}
-                  className="mt-6 mb-8 flex justify-center"
+                  className="mt-6 mb-8 flex justify-center items-center gap-4"
                 >
                   <button
                     onClick={onViewImpact}
@@ -1134,13 +1138,57 @@ export function IsometricPlatformVisualization({
                       View Business Impact
                     </span>
                   </button>
+                  
+                  {/* View Mode Toggle */}
+                  <div 
+                    className="flex items-center rounded-full p-1"
+                    style={{
+                      background: 'rgba(255, 255, 255, 0.05)',
+                      border: '1px solid rgba(255, 255, 255, 0.1)'
+                    }}
+                  >
+                    <button
+                      onClick={() => setViewMode('overview')}
+                      className={`flex items-center gap-2 px-4 py-2 rounded-full transition-all duration-300 ${
+                        viewMode === 'overview' 
+                          ? 'bg-indigo-600 text-white' 
+                          : 'text-white/60 hover:text-white/90'
+                      }`}
+                      style={{ fontWeight: 'var(--font-weight-medium)', fontSize: '0.875rem' }}
+                    >
+                      <LayoutGrid className="w-4 h-4" />
+                      <span>Overview</span>
+                    </button>
+                    <button
+                      onClick={() => setViewMode('in-action')}
+                      className={`flex items-center gap-2 px-4 py-2 rounded-full transition-all duration-300 ${
+                        viewMode === 'in-action' 
+                          ? 'bg-gradient-to-r from-orange-500 to-pink-500 text-white' 
+                          : 'text-white/60 hover:text-white/90'
+                      }`}
+                      style={{ fontWeight: 'var(--font-weight-medium)', fontSize: '0.875rem' }}
+                    >
+                      <Play className="w-4 h-4" />
+                      <span>In Action</span>
+                    </button>
+                  </div>
                 </motion.div>
                 
 
               </div>
             )}
             
-            {/* Platform Grid - All components inside */}
+            {/* Conditional View: Overview or In Action */}
+            {viewMode === 'in-action' ? (
+              <InActionView
+                department={department}
+                products={products}
+                agents={agents}
+                vibeApps={vibeApps}
+                sidekickActions={sidekickActions}
+              />
+            ) : (
+            /* Platform Grid - All components inside (Overview mode) */
             <div 
               className="grid xl:grid-cols-[auto_1fr] gap-4 md:gap-6 transition-all duration-300"
               style={{
@@ -1793,6 +1841,7 @@ export function IsometricPlatformVisualization({
               </div>
               
             </div>
+            )}
             
             {/* Status bar at bottom */}
             <div className="flex items-center gap-3 mt-6 pt-4 border-t border-white/5">
