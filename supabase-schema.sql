@@ -37,6 +37,7 @@ CREATE TABLE IF NOT EXISTS products (
   description TEXT,
   value TEXT,
   image TEXT,
+  images TEXT[] DEFAULT '{}',
   use_cases TEXT[] DEFAULT '{}',
   replaces_tools JSONB DEFAULT '[]',
   order_index INTEGER DEFAULT 0,
@@ -44,6 +45,16 @@ CREATE TABLE IF NOT EXISTS products (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+
+-- Add images column if not exists (for existing databases)
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_name = 'products' AND column_name = 'images'
+  ) THEN
+    ALTER TABLE products ADD COLUMN images TEXT[] DEFAULT '{}';
+  END IF;
+END $$;
 
 -- Agents table
 CREATE TABLE IF NOT EXISTS agents (

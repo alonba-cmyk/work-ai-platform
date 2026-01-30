@@ -195,6 +195,7 @@ export function KnowledgeBaseEditor({ defaultTab, onTabChange, onBack }: Knowled
     description: '',
     value: '',
     image: '',
+    images: [] as string[],  // Additional gallery images
     department_id: '',
   });
 
@@ -347,6 +348,7 @@ export function KnowledgeBaseEditor({ defaultTab, onTabChange, onBack }: Knowled
       description: '',
       value: '',
       image: '',
+      images: [],
       department_id: '',
     });
     setShowAddForm(false);
@@ -388,6 +390,11 @@ export function KnowledgeBaseEditor({ defaultTab, onTabChange, onBack }: Knowled
       is_active: true,
     };
 
+    // Add images array for products only
+    if (activeTab === 'products') {
+      insertData.images = formData.images || [];
+    }
+
     // Only add department_id if selected
     if (formData.department_id) {
       insertData.department_id = formData.department_id;
@@ -408,6 +415,11 @@ export function KnowledgeBaseEditor({ defaultTab, onTabChange, onBack }: Knowled
       value: formData.value || null,
       image: formData.image || null,
     };
+
+    // Add images array for products only
+    if (activeTab === 'products') {
+      updateData.images = formData.images || [];
+    }
 
     if (formData.department_id) {
       updateData.department_id = formData.department_id;
@@ -599,6 +611,7 @@ export function KnowledgeBaseEditor({ defaultTab, onTabChange, onBack }: Knowled
       description: item.description || '',
       value: item.value || '',
       image: item.image || '',
+      images: (item as any).images || [],
       department_id: item.department_id || '',
     });
     // Fetch linked Intent Types for this item
@@ -1015,23 +1028,15 @@ export function KnowledgeBaseEditor({ defaultTab, onTabChange, onBack }: Knowled
               <div className="px-8 py-6 overflow-y-auto max-h-[calc(90vh-180px)] scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-transparent hover:scrollbar-thumb-gray-600">
                 {/* Top Section: Image + Basic Info */}
                 <div className="flex gap-6 mb-8">
-                  {/* Image Section */}
+                  {/* Main Image Section - Cleaner Design */}
                   <div className="flex-shrink-0">
-                    <div className="w-32 h-32 rounded-2xl bg-gradient-to-br from-gray-800 to-gray-900 border-2 border-gray-700 overflow-hidden flex items-center justify-center">
-                      {formData.image ? (
-                        <img src={formData.image} alt="" className="w-full h-full object-cover" />
-                      ) : (
-                        <currentTab.icon className="w-12 h-12 text-gray-600" />
-                      )}
-                    </div>
-                    <div className="mt-3">
-                      <ImageUploader
-                        currentImage={formData.image}
-                        onUpload={(url) => setFormData({ ...formData, image: url })}
-                        folder="knowledge"
-                        label={formData.image ? "Change" : "Add Image"}
-                      />
-                    </div>
+                    <label className="block text-sm font-medium text-gray-400 mb-2">Main Image</label>
+                    <ImageUploader
+                      currentImage={formData.image}
+                      onUpload={(url) => setFormData({ ...formData, image: url })}
+                      folder="knowledge"
+                      label="Upload Main Image"
+                    />
                   </div>
 
                   {/* Basic Info */}
@@ -1070,6 +1075,54 @@ export function KnowledgeBaseEditor({ defaultTab, onTabChange, onBack }: Knowled
                     placeholder="Describe what this does..."
                   />
                 </div>
+
+                {/* Gallery Section - Only for products */}
+                {activeTab === 'products' && (
+                  <div className="mb-6 pt-6 border-t border-gray-700/50">
+                    <div className="flex items-center justify-between mb-3">
+                      <label className="text-sm font-medium text-gray-400">Additional Images (Gallery)</label>
+                      <span className="text-xs text-gray-500">{formData.images.length} images</span>
+                    </div>
+                    <div className="flex flex-wrap gap-3">
+                      {/* Existing gallery images */}
+                      {formData.images.map((img, index) => (
+                        <div key={index} className="relative group">
+                          <img 
+                            src={img} 
+                            alt={`Gallery ${index + 1}`} 
+                            className="w-20 h-20 object-cover rounded-lg border border-gray-700"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const newImages = [...formData.images];
+                              newImages.splice(index, 1);
+                              setFormData({ ...formData, images: newImages });
+                            }}
+                            className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center hover:bg-red-600 transition-colors opacity-0 group-hover:opacity-100"
+                          >
+                            <X className="w-3 h-3 text-white" />
+                          </button>
+                        </div>
+                      ))}
+                      
+                      {/* Add new image button */}
+                      <div className="w-20 h-20">
+                        <ImageUploader
+                          currentImage={null}
+                          onUpload={(url) => {
+                            if (url) {
+                              setFormData({ ...formData, images: [...formData.images, url] });
+                            }
+                          }}
+                          folder="knowledge"
+                          label="+"
+                        />
+                      </div>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-2">Add multiple images to show different views of this product</p>
+                  </div>
+                )}
 
             {/* Intent Type Assignment Section - Only show when editing */}
             {editingId && (

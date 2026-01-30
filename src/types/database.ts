@@ -19,6 +19,7 @@ export interface ProductRow {
   description: string;
   value: string;
   image: string | null;
+  images: string[];  // Additional gallery images
   icon?: string | null;
   use_cases: string[];
   replaces_tools: { name: string; color: string }[];
