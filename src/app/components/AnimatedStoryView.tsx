@@ -197,11 +197,7 @@ export function AnimatedStoryView({ department, agents = [] }: AnimatedStoryView
   return (
     <div className="w-full">
       {/* Header with narrative */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="text-center mb-6"
-      >
+      <div className="text-center mb-6">
         <h3 
           className="text-2xl md:text-3xl text-white mb-2"
           style={{ fontWeight: 'var(--font-weight-bold)' }}
@@ -211,15 +207,10 @@ export function AnimatedStoryView({ department, agents = [] }: AnimatedStoryView
         <p className="text-white/60 text-lg">
           Watch how AI handles your campaign from start to finish
         </p>
-      </motion.div>
+      </div>
 
       {/* Playback Controls */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2 }}
-        className="flex items-center justify-center gap-4 mb-6"
-      >
+      <div className="flex items-center justify-center gap-4 mb-6">
         {/* Step indicators */}
         <div className="flex items-center gap-2">
           {storySteps.map((step, index) => (
@@ -270,19 +261,15 @@ export function AnimatedStoryView({ department, agents = [] }: AnimatedStoryView
             <SkipForward className="w-4 h-4 text-white" />
           </button>
         )}
-      </motion.div>
+      </div>
 
       {/* Current Step Title */}
-      <motion.div
-        key={currentStep}
-        initial={{ opacity: 0, y: -10 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="text-center mb-4"
+      <div className="text-center mb-4">
       >
         <span className="text-indigo-400 text-sm font-medium">
           Step {currentStep + 1}: {storySteps[currentStep]?.title}
         </span>
-      </motion.div>
+      </div>
 
       {/* Main Animation Stage - 100% WIDTH - NO SCALE ANIMATION */}
       <div
@@ -892,16 +879,11 @@ export function AnimatedStoryView({ department, agents = [] }: AnimatedStoryView
       </div>
 
       {/* Bottom narrative */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.5 }}
-        className="text-center mt-4"
-      >
+      <div className="text-center mt-4">
         <p className="text-white/40 text-sm">
           {storySteps[currentStep]?.description}
         </p>
-      </motion.div>
+      </div>
     </div>
   );
 }
