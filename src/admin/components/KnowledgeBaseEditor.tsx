@@ -255,6 +255,13 @@ export function KnowledgeBaseEditor({ defaultTab, onTabChange, onBack }: Knowled
       supabase.from(`ai_transformation_${contentType}`).select(idFieldName),
     ]);
 
+    // Debug logging
+    console.log('[fetchItemLinks] Content type:', contentType, 'ID field:', idFieldName);
+    console.log('[fetchItemLinks] Department links:', deptLinks.data?.length || 0, 'records', deptLinks.error ? `ERROR: ${deptLinks.error.message}` : '');
+    console.log('[fetchItemLinks] Outcome links:', outcomeLinks.data?.length || 0, 'records', outcomeLinks.error ? `ERROR: ${outcomeLinks.error.message}` : '');
+    console.log('[fetchItemLinks] Pain Point links:', painPointLinks.data?.length || 0, 'records', painPointLinks.error ? `ERROR: ${painPointLinks.error.message}` : '');
+    console.log('[fetchItemLinks] AI Trans links:', aiTransLinks.data?.length || 0, 'records', aiTransLinks.error ? `ERROR: ${aiTransLinks.error.message}` : '');
+
     // Count links per item
     const links: Record<string, ItemLinks> = {};
     itemIds.forEach(id => {
