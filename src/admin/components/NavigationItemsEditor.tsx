@@ -643,7 +643,16 @@ export function NavigationItemsEditor({ type, title, icon, onNavigateToKnowledge
             ) : (
               <div>
                 <div className="grid grid-cols-2 gap-3">
-                  {currentContent.items.map(content => {
+                  {/* Sort items: linked items first, then alphabetically by name */}
+                  {[...currentContent.items]
+                    .sort((a, b) => {
+                      const aLinked = isItemLinked(currentContent.type, a.id);
+                      const bLinked = isItemLinked(currentContent.type, b.id);
+                      if (aLinked && !bLinked) return -1;
+                      if (!aLinked && bLinked) return 1;
+                      return a.name.localeCompare(b.name);
+                    })
+                    .map(content => {
                     const isLinked = isItemLinked(currentContent.type, content.id);
                     const tabIcon = getContentIcon(activeTab);
                     
