@@ -917,16 +917,18 @@ export function NavigationItemsEditor({ type, title, icon, onNavigateToKnowledge
               </div>
 
               <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
+                {/* Toggle Switch */}
                 <button
                   onClick={() => handleToggleActive(item.id, item.is_active)}
-                  className={`px-3 py-1 rounded-full text-xs font-medium cursor-pointer transition-all ${
-                    item.is_active
-                      ? 'bg-green-500/20 text-green-400 hover:bg-green-500/30'
-                      : 'bg-gray-700 text-gray-400 hover:bg-gray-600 hover:text-white'
-                  }`}
+                  className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none cursor-pointer"
+                  style={{ backgroundColor: item.is_active ? '#22c55e' : '#4b5563' }}
                   title={item.is_active ? 'לחץ להסתרה' : 'לחץ להפעלה'}
                 >
-                  {item.is_active ? 'Active' : 'Hidden'}
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                      item.is_active ? 'translate-x-6' : 'translate-x-1'
+                    }`}
+                  />
                 </button>
                 <button
                   onClick={() => startEdit(item)}
