@@ -642,61 +642,104 @@ export function NavigationItemsEditor({ type, title, icon, onNavigateToKnowledge
               </div>
             ) : (
               <div>
-                <div className="grid grid-cols-2 gap-3">
-                  {/* Sort items: linked items first, then alphabetically by name */}
-                  {[...currentContent.items]
-                    .sort((a, b) => {
-                      const aLinked = isItemLinked(currentContent.type, a.id);
-                      const bLinked = isItemLinked(currentContent.type, b.id);
-                      if (aLinked && !bLinked) return -1;
-                      if (!aLinked && bLinked) return 1;
-                      return a.name.localeCompare(b.name);
-                    })
-                    .map(content => {
-                    const isLinked = isItemLinked(currentContent.type, content.id);
-                    const tabIcon = getContentIcon(activeTab);
-                    
-                    return (
-                      <button
-                        key={content.id}
-                        onClick={() => toggleLink(currentContent.type, content.id, isLinked)}
-                        className={`flex items-center gap-4 p-4 rounded-xl border transition-all ${
-                          isLinked
-                            ? 'bg-indigo-600/20 border-indigo-500 text-white'
-                            : 'bg-gray-900 border-gray-700 text-gray-300 hover:border-gray-600'
-                        }`}
-                      >
-                        <div className="w-10 h-10 rounded-lg bg-gray-800 flex items-center justify-center overflow-hidden">
-                          {(() => {
-                            const productIcon = getProductIcon(content.name);
-                            // Priority for Products: 1) Product icon by name, 2) DB image, 3) Lucide fallback
-                            // Priority for other tabs: 1) Tab default icon, 2) DB image, 3) Lucide fallback
-                            if (activeTab === 'products' && productIcon) {
-                              return <img src={productIcon} alt="" className="w-8 h-8 object-contain" />;
-                            } else if (tabIcon) {
-                              return <img src={tabIcon} alt="" className="w-8 h-8 object-contain" />;
-                            } else if (content.image) {
-                              return <img src={content.image} alt="" className="w-8 h-8 object-contain" />;
-                            } else {
-                              return <Package className="w-5 h-5 text-gray-500" />;
-                            }
-                          })()}
-                        </div>
-                        <div className="flex-1 text-left">
-                          <p className="font-medium">{content.name}</p>
-                          {content.description && (
-                            <p className="text-sm text-gray-400 truncate">{content.description}</p>
-                          )}
-                        </div>
-                        {isLinked && (
-                          <div className="w-6 h-6 bg-indigo-600 rounded-full flex items-center justify-center">
-                            <Check className="w-4 h-4 text-white" />
-                          </div>
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
+                {/* Linked items first - single column (full width) */}
+                {(() => {
+                  const linkedItems = currentContent.items
+                    .filter(item => isItemLinked(currentContent.type, item.id))
+                    .sort((a, b) => a.name.localeCompare(b.name));
+                  
+                  if (linkedItems.length === 0) return null;
+                  
+                  return (
+                    <div className="mb-6">
+                      <p className="text-sm text-gray-400 mb-3">Selected ({linkedItems.length})</p>
+                      <div className="flex flex-col gap-3">
+                        {linkedItems.map(content => {
+                          const tabIcon = getContentIcon(activeTab);
+                          return (
+                            <button
+                              key={content.id}
+                              onClick={() => toggleLink(currentContent.type, content.id, true)}
+                              className="flex items-center gap-4 p-4 rounded-xl border transition-all bg-indigo-600/20 border-indigo-500 text-white"
+                            >
+                              <div className="w-10 h-10 rounded-lg bg-gray-800 flex items-center justify-center overflow-hidden">
+                                {(() => {
+                                  const productIcon = getProductIcon(content.name);
+                                  if (activeTab === 'products' && productIcon) {
+                                    return <img src={productIcon} alt="" className="w-8 h-8 object-contain" />;
+                                  } else if (tabIcon) {
+                                    return <img src={tabIcon} alt="" className="w-8 h-8 object-contain" />;
+                                  } else if (content.image) {
+                                    return <img src={content.image} alt="" className="w-8 h-8 object-contain" />;
+                                  } else {
+                                    return <Package className="w-5 h-5 text-gray-500" />;
+                                  }
+                                })()}
+                              </div>
+                              <div className="flex-1 text-left">
+                                <p className="font-medium">{content.name}</p>
+                                {content.description && (
+                                  <p className="text-sm text-gray-400 truncate">{content.description}</p>
+                                )}
+                              </div>
+                              <div className="w-6 h-6 bg-indigo-600 rounded-full flex items-center justify-center">
+                                <Check className="w-4 h-4 text-white" />
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })()}
+
+                {/* Unlinked items - two column grid */}
+                {(() => {
+                  const unlinkedItems = currentContent.items
+                    .filter(item => !isItemLinked(currentContent.type, item.id))
+                    .sort((a, b) => a.name.localeCompare(b.name));
+                  
+                  if (unlinkedItems.length === 0) return null;
+                  
+                  return (
+                    <div>
+                      <p className="text-sm text-gray-400 mb-3">Available ({unlinkedItems.length})</p>
+                      <div className="grid grid-cols-2 gap-3">
+                        {unlinkedItems.map(content => {
+                          const tabIcon = getContentIcon(activeTab);
+                          return (
+                            <button
+                              key={content.id}
+                              onClick={() => toggleLink(currentContent.type, content.id, false)}
+                              className="flex items-center gap-4 p-4 rounded-xl border transition-all bg-gray-900 border-gray-700 text-gray-300 hover:border-gray-600"
+                            >
+                              <div className="w-10 h-10 rounded-lg bg-gray-800 flex items-center justify-center overflow-hidden">
+                                {(() => {
+                                  const productIcon = getProductIcon(content.name);
+                                  if (activeTab === 'products' && productIcon) {
+                                    return <img src={productIcon} alt="" className="w-8 h-8 object-contain" />;
+                                  } else if (tabIcon) {
+                                    return <img src={tabIcon} alt="" className="w-8 h-8 object-contain" />;
+                                  } else if (content.image) {
+                                    return <img src={content.image} alt="" className="w-8 h-8 object-contain" />;
+                                  } else {
+                                    return <Package className="w-5 h-5 text-gray-500" />;
+                                  }
+                                })()}
+                              </div>
+                              <div className="flex-1 text-left">
+                                <p className="font-medium">{content.name}</p>
+                                {content.description && (
+                                  <p className="text-sm text-gray-400 truncate">{content.description}</p>
+                                )}
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })()}
 
                 {/* Save/Discard Buttons */}
                 {hasUnsavedChanges && (
