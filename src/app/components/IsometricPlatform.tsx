@@ -462,8 +462,8 @@ export function IsometricCard({
   const [isHovered, setIsHovered] = useState(false);
   
   const sizeMap = {
-    small: { width: '160px', padding: 'p-4' },
-    medium: { width: '180px', padding: 'p-5' }
+    small: { width: '180px', padding: 'p-4' },
+    medium: { width: '200px', padding: 'p-5' }
   };
   
   const dimensions = sizeMap[size];
@@ -515,7 +515,7 @@ export function IsometricCard({
           background: styling.bgGradient,
           borderColor: styling.borderColor,
           boxShadow: '0 2px 8px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.05)',
-          minHeight: (type === 'agent' || type === 'vibe') && image ? '200px' : '140px'
+          minHeight: (type === 'agent' || type === 'vibe') && image ? '240px' : '160px'
         }}
       >
         {/* Shine effect on hover */}
