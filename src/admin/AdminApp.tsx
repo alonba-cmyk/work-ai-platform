@@ -3,7 +3,7 @@ import { AdminSidebar } from './components/AdminSidebar';
 import { SiteSettingsEditor } from './components/SiteSettingsEditor';
 import { NavigationItemsEditor } from './components/NavigationItemsEditor';
 import { KnowledgeBaseEditor } from './components/KnowledgeBaseEditor';
-import { Settings, LayoutDashboard, Globe, Target, AlertCircle, Sparkles, Building2, Database } from 'lucide-react';
+import { Settings, LayoutDashboard, Globe, Target, AlertCircle, Sparkles, Building2, Database, Rocket, ExternalLink, CheckCircle, X } from 'lucide-react';
 
 type NavigationSection = 'site_settings' | 'knowledge_base' | 'outcomes' | 'pain_points' | 'ai_transformations' | 'departments' | null;
 
@@ -13,6 +13,19 @@ export default function AdminApp() {
   const [activeNavSection, setActiveNavSection] = useState<NavigationSection>(null);
   const [knowledgeDefaultTab, setKnowledgeDefaultTab] = useState<KnowledgeTab | null>(null);
   const [loading] = useState(false);
+  const [showPublishModal, setShowPublishModal] = useState(false);
+
+  // Get the base URL for the main site (same origin, just root path)
+  const getSiteUrl = () => {
+    const baseUrl = window.location.origin;
+    // If we're in admin, return the main site URL
+    return baseUrl;
+  };
+
+  const handleOpenPreview = () => {
+    window.open(getSiteUrl(), '_blank');
+    setShowPublishModal(false);
+  };
 
   // Navigate to Knowledge Base with a specific tab open
   const navigateToKnowledge = (tab?: KnowledgeTab) => {
@@ -84,10 +97,19 @@ export default function AdminApp() {
               <h1 className="text-2xl font-bold text-white">{getNavSectionTitle()}</h1>
               <p className="text-gray-400 text-sm mt-1">{getNavSectionSubtitle()}</p>
             </div>
-            <button className="flex items-center gap-2 px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg text-gray-300 transition-colors">
-              <Settings className="w-5 h-5" />
-              Settings
-            </button>
+            <div className="flex items-center gap-3">
+              <button 
+                onClick={() => setShowPublishModal(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 rounded-lg text-white font-medium transition-all shadow-lg shadow-green-900/20"
+              >
+                <Rocket className="w-5 h-5" />
+                Publish
+              </button>
+              <button className="flex items-center gap-2 px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg text-gray-300 transition-colors">
+                <Settings className="w-5 h-5" />
+                Settings
+              </button>
+            </div>
           </div>
         </header>
 
@@ -204,6 +226,72 @@ export default function AdminApp() {
           )}
         </main>
       </div>
+
+      {/* Publish Modal */}
+      {showPublishModal && (
+        <div 
+          className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50"
+          onClick={() => setShowPublishModal(false)}
+        >
+          <div 
+            className="bg-gray-900 rounded-2xl border border-gray-700 shadow-2xl w-full max-w-md mx-4 overflow-hidden"
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="bg-gradient-to-r from-green-600 to-emerald-600 px-6 py-4 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Rocket className="w-6 h-6 text-white" />
+                <h2 className="text-xl font-bold text-white">Publish Site</h2>
+              </div>
+              <button
+                onClick={() => setShowPublishModal(false)}
+                className="text-white/80 hover:text-white transition-colors"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div className="p-6">
+              {/* Status Message */}
+              <div className="bg-green-500/10 border border-green-500/30 rounded-xl p-4 mb-6">
+                <div className="flex items-start gap-3">
+                  <CheckCircle className="w-6 h-6 text-green-400 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-green-400 font-medium">השינויים שלך כבר שמורים!</p>
+                    <p className="text-green-400/70 text-sm mt-1">
+                      כל השינויים שביצעת בדשבורד נשמרים אוטומטית ל-Supabase ומוצגים באתר בזמן אמת.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="space-y-3">
+                <button
+                  onClick={handleOpenPreview}
+                  className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 rounded-xl text-white font-medium transition-all shadow-lg"
+                >
+                  <ExternalLink className="w-5 h-5" />
+                  פתח את האתר בחלון חדש
+                </button>
+
+                <button
+                  onClick={() => setShowPublishModal(false)}
+                  className="w-full px-6 py-3 bg-gray-800 hover:bg-gray-700 rounded-xl text-gray-300 transition-colors"
+                >
+                  סגור
+                </button>
+              </div>
+
+              {/* Info */}
+              <p className="text-gray-500 text-xs text-center mt-4">
+                💡 טיפ: השתמש ב-Toggle כדי להסתיר/להציג פריטים באתר
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
