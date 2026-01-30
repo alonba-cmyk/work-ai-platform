@@ -1,6 +1,7 @@
 import { motion, AnimatePresence } from 'motion/react';
 import { useState, useEffect, useCallback } from 'react';
-import { Play, Pause, SkipForward, RotateCcw, Zap, Sparkles, Users, Phone, Check, Mail, Share2, PhoneCall } from 'lucide-react';
+import { Play, Pause, SkipForward, RotateCcw, Sparkles, Users, Phone, Check, Mail, Share2, PhoneCall } from 'lucide-react';
+import sidekickLogo from '@/assets/1babfe88a809998ec3c5c5d597d8051ef7639a6f.png';
 
 interface AnimatedStoryViewProps {
   department: string;
@@ -421,8 +422,8 @@ export function AnimatedStoryView({ department, agents = [] }: AnimatedStoryView
                 >
                   {/* Sidekick Header */}
                   <div className="flex items-center gap-3 mb-4 pb-3 border-b border-white/10">
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center">
-                      <Zap className="w-5 h-5 text-white" />
+                    <div className="w-10 h-10 rounded-lg overflow-hidden">
+                      <img src={sidekickLogo} alt="Sidekick" className="w-full h-full object-contain" />
                     </div>
                     <div>
                       <span className="text-white font-semibold">Sidekick</span>
