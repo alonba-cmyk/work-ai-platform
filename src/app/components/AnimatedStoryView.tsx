@@ -1,6 +1,6 @@
 import { motion, AnimatePresence } from 'motion/react';
 import { useState, useEffect, useCallback } from 'react';
-import { Play, Pause, SkipForward, RotateCcw, Zap, Sparkles, Users, Phone, Check, Mail, Share2 } from 'lucide-react';
+import { Play, Pause, SkipForward, RotateCcw, Zap, Sparkles, Users, Phone, Check, Mail, Share2, PhoneCall } from 'lucide-react';
 
 interface AnimatedStoryViewProps {
   department: string;
@@ -18,7 +18,7 @@ interface StoryStep {
 const storySteps: StoryStep[] = [
   { id: 1, title: 'Sidekick Chat', description: 'Ask your AI assistant for help', duration: 5000 },
   { id: 2, title: 'Campaign Creation', description: 'Vibe App builds your campaign', duration: 5000 },
-  { id: 3, title: 'Agent Working', description: 'AI Agent confirms attendees', duration: 5000 },
+  { id: 3, title: 'Agent Working', description: 'AI Agent confirms attendees', duration: 6000 },
   { id: 4, title: 'Success!', description: 'Watch results appear in real-time', duration: 5000 },
 ];
 
@@ -39,6 +39,11 @@ export function AnimatedStoryView({ department }: AnimatedStoryViewProps) {
   
   // Campaign progress (step 2)
   const [campaignProgress, setCampaignProgress] = useState(0);
+
+  // Agent call conversation state (step 3)
+  const [agentMessageIndex, setAgentMessageIndex] = useState(0);
+  const [showCustomerResponse, setShowCustomerResponse] = useState(false);
+  const [callDuration, setCallDuration] = useState(0);
 
   // Auto-advance through steps
   useEffect(() => {
@@ -66,6 +71,9 @@ export function AnimatedStoryView({ department }: AnimatedStoryViewProps) {
       setCampaignProgress(0);
     } else if (currentStep === 2) {
       setCallCount(0);
+      setAgentMessageIndex(0);
+      setShowCustomerResponse(false);
+      setCallDuration(0);
     } else if (currentStep === 3) {
       setConfirmedRows([]);
     }
@@ -95,7 +103,7 @@ export function AnimatedStoryView({ department }: AnimatedStoryViewProps) {
     }
   }, [currentStep, campaignProgress, isPlaying]);
 
-  // Step 3: Call counter
+  // Step 3: Call counter and conversation
   useEffect(() => {
     if (currentStep !== 2 || !isPlaying) return;
     
@@ -104,6 +112,31 @@ export function AnimatedStoryView({ department }: AnimatedStoryViewProps) {
       return () => clearTimeout(timer);
     }
   }, [currentStep, callCount, isPlaying]);
+
+  // Step 3: Agent message typing
+  const agentCallMessage = "Hi Sarah! I'm calling about the marketing event next week. Will you be joining us?";
+  useEffect(() => {
+    if (currentStep !== 2 || !isPlaying) return;
+    
+    if (agentMessageIndex < agentCallMessage.length) {
+      const timer = setTimeout(() => setAgentMessageIndex(prev => prev + 1), 40);
+      return () => clearTimeout(timer);
+    } else if (!showCustomerResponse) {
+      const timer = setTimeout(() => setShowCustomerResponse(true), 800);
+      return () => clearTimeout(timer);
+    }
+  }, [currentStep, agentMessageIndex, showCustomerResponse, isPlaying]);
+
+  // Step 3: Call duration timer
+  useEffect(() => {
+    if (currentStep !== 2 || !isPlaying) return;
+    
+    const timer = setInterval(() => {
+      setCallDuration(prev => prev + 1);
+    }, 1000);
+    
+    return () => clearInterval(timer);
+  }, [currentStep, isPlaying]);
 
   // Step 4: Row confirmations
   useEffect(() => {
@@ -128,6 +161,9 @@ export function AnimatedStoryView({ department }: AnimatedStoryViewProps) {
       setTypingIndex(0);
       setShowResponse(false);
       setCampaignProgress(0);
+      setAgentMessageIndex(0);
+      setShowCustomerResponse(false);
+      setCallDuration(0);
     } else {
       setIsPlaying(prev => !prev);
     }
@@ -146,6 +182,13 @@ export function AnimatedStoryView({ department }: AnimatedStoryViewProps) {
   }, []);
 
   const userMessage = "I need to create an event campaign for next week";
+
+  // Format call duration as mm:ss
+  const formatDuration = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
 
   return (
     <div className="w-full">
@@ -237,7 +280,7 @@ export function AnimatedStoryView({ department }: AnimatedStoryViewProps) {
         </span>
       </motion.div>
 
-      {/* Main Animation Stage */}
+      {/* Main Animation Stage - FULL WIDTH */}
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -246,11 +289,11 @@ export function AnimatedStoryView({ department }: AnimatedStoryViewProps) {
         style={{
           background: 'linear-gradient(135deg, rgba(30, 30, 40, 0.95), rgba(20, 20, 30, 0.98))',
           border: '1px solid rgba(255, 255, 255, 0.1)',
-          minHeight: '450px'
+          minHeight: '520px'
         }}
       >
-        {/* Board Background - Always visible */}
-        <div className="absolute left-6 top-6 bottom-6 w-[45%] rounded-xl overflow-hidden"
+        {/* Board Background - Left Side */}
+        <div className="absolute left-6 top-6 bottom-6 w-[55%] rounded-xl overflow-hidden"
           style={{
             background: 'rgba(0, 0, 0, 0.3)',
             border: '1px solid rgba(255, 255, 255, 0.1)'
@@ -275,13 +318,16 @@ export function AnimatedStoryView({ department }: AnimatedStoryViewProps) {
                 animate={{
                   borderColor: confirmedRows.includes(index) 
                     ? 'rgba(34, 197, 94, 0.5)' 
-                    : 'rgba(255, 255, 255, 0.05)'
+                    : 'rgba(255, 255, 255, 0.05)',
+                  boxShadow: confirmedRows.includes(index) 
+                    ? '0 0 20px rgba(34, 197, 94, 0.2)' 
+                    : 'none'
                 }}
               >
                 <div className="w-4 h-4 rounded border border-white/20" />
                 <span className="text-white/70 text-sm flex-1">{name}</span>
                 <motion.div
-                  className="h-6 w-20 rounded-full flex items-center justify-center text-xs"
+                  className="h-6 w-24 rounded-full flex items-center justify-center text-xs font-medium"
                   animate={{
                     backgroundColor: confirmedRows.includes(index) 
                       ? 'rgba(34, 197, 94, 0.3)' 
@@ -292,15 +338,71 @@ export function AnimatedStoryView({ department }: AnimatedStoryViewProps) {
                   }}
                   transition={{ duration: 0.5 }}
                 >
-                  {confirmedRows.includes(index) ? 'Confirmed' : 'Pending'}
+                  {confirmedRows.includes(index) ? '✓ Confirmed' : 'Pending'}
                 </motion.div>
               </motion.div>
             ))}
           </div>
+
+          {/* Agent Avatar on Board - Shows during steps 2, 3, 4 */}
+          <AnimatePresence>
+            {currentStep >= 1 && (
+              <motion.div
+                initial={{ scale: 0, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0, opacity: 0 }}
+                className="absolute bottom-4 left-4"
+              >
+                <motion.div
+                  animate={currentStep === 2 ? { scale: [1, 1.1, 1] } : {}}
+                  transition={{ repeat: currentStep === 2 ? Infinity : 0, duration: 1.5 }}
+                  className="relative"
+                >
+                  {/* Glowing circle */}
+                  <div 
+                    className="w-20 h-20 rounded-full flex items-center justify-center"
+                    style={{
+                      background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+                      boxShadow: currentStep === 2 
+                        ? '0 0 40px rgba(99, 102, 241, 0.6), 0 0 80px rgba(139, 92, 246, 0.3)' 
+                        : '0 0 20px rgba(99, 102, 241, 0.4)'
+                    }}
+                  >
+                    <Users className="w-10 h-10 text-white" />
+                  </div>
+                  
+                  {/* Status indicator */}
+                  <motion.div
+                    animate={currentStep === 2 ? { rotate: [0, -15, 15, -15, 0] } : {}}
+                    transition={{ repeat: currentStep === 2 ? Infinity : 0, duration: 0.6 }}
+                    className={`absolute -right-1 -bottom-1 w-8 h-8 rounded-full flex items-center justify-center ${
+                      currentStep === 2 ? 'bg-green-500' : currentStep >= 3 ? 'bg-green-500' : 'bg-indigo-500'
+                    }`}
+                    style={{
+                      boxShadow: currentStep === 2 ? '0 0 15px rgba(34, 197, 94, 0.6)' : 'none'
+                    }}
+                  >
+                    {currentStep === 2 ? (
+                      <Phone className="w-4 h-4 text-white" />
+                    ) : currentStep >= 3 ? (
+                      <Check className="w-4 h-4 text-white" />
+                    ) : (
+                      <Sparkles className="w-4 h-4 text-white" />
+                    )}
+                  </motion.div>
+
+                  {/* Agent label */}
+                  <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 whitespace-nowrap">
+                    <span className="text-white/60 text-xs font-medium">RSVP Agent</span>
+                  </div>
+                </motion.div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
 
         {/* Right Side - Dynamic Content */}
-        <div className="absolute right-6 top-6 bottom-6 w-[48%]">
+        <div className="absolute right-6 top-6 bottom-6 w-[38%]">
           <AnimatePresence mode="wait">
             {/* Step 1: Sidekick Chat */}
             {currentStep === 0 && (
@@ -330,14 +432,14 @@ export function AnimatedStoryView({ department }: AnimatedStoryViewProps) {
                   </div>
                   
                   {/* Chat Messages */}
-                  <div className="flex-1 space-y-4">
+                  <div className="flex-1 space-y-4 overflow-y-auto">
                     {/* User message with typing effect */}
                     <motion.div
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       className="flex justify-end"
                     >
-                      <div className="bg-indigo-600 rounded-2xl rounded-br-md px-4 py-2 max-w-[80%]">
+                      <div className="bg-indigo-600 rounded-2xl rounded-br-md px-4 py-2 max-w-[85%]">
                         <p className="text-white text-sm">
                           {userMessage.slice(0, typingIndex)}
                           {typingIndex < userMessage.length && (
@@ -355,11 +457,11 @@ export function AnimatedStoryView({ department }: AnimatedStoryViewProps) {
                           animate={{ opacity: 1, y: 0 }}
                           className="flex justify-start"
                         >
-                          <div className="bg-white/10 rounded-2xl rounded-bl-md px-4 py-2 max-w-[85%]">
+                          <div className="bg-white/10 rounded-2xl rounded-bl-md px-4 py-3 max-w-[90%]">
                             <p className="text-white text-sm">
                               I'll help you set that up! Let me create:
                             </p>
-                            <ul className="text-white/70 text-sm mt-2 space-y-1">
+                            <ul className="text-white/70 text-sm mt-2 space-y-1.5">
                               <motion.li 
                                 initial={{ opacity: 0, x: -10 }}
                                 animate={{ opacity: 1, x: 0 }}
@@ -428,7 +530,7 @@ export function AnimatedStoryView({ department }: AnimatedStoryViewProps) {
                         <span className="text-white/70">Building campaign...</span>
                         <span className="text-pink-400">{campaignProgress}%</span>
                       </div>
-                      <div className="h-2 bg-white/10 rounded-full overflow-hidden">
+                      <div className="h-3 bg-white/10 rounded-full overflow-hidden">
                         <motion.div
                           className="h-full bg-gradient-to-r from-pink-500 to-purple-500"
                           style={{ width: `${campaignProgress}%` }}
@@ -483,7 +585,7 @@ export function AnimatedStoryView({ department }: AnimatedStoryViewProps) {
               </motion.div>
             )}
 
-            {/* Step 3: Agent Calling */}
+            {/* Step 3: Agent Calling - NOW WITH CALL WINDOW */}
             {currentStep === 2 && (
               <motion.div
                 key="step3"
@@ -493,55 +595,112 @@ export function AnimatedStoryView({ department }: AnimatedStoryViewProps) {
                 className="h-full flex flex-col"
               >
                 <div 
-                  className="flex-1 rounded-xl p-4 flex flex-col items-center justify-center"
+                  className="flex-1 rounded-xl p-4 flex flex-col"
                   style={{
                     background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(139, 92, 246, 0.15))',
                     border: '1px solid rgba(99, 102, 241, 0.3)'
                   }}
                 >
-                  {/* Agent Avatar */}
-                  <motion.div
-                    animate={{ scale: [1, 1.05, 1] }}
-                    transition={{ repeat: Infinity, duration: 2 }}
-                    className="relative mb-6"
-                  >
-                    <div className="w-24 h-24 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
-                      <Users className="w-12 h-12 text-white" />
+                  {/* Call Window Header */}
+                  <div className="flex items-center justify-between mb-4 pb-3 border-b border-white/10">
+                    <div className="flex items-center gap-3">
+                      <motion.div
+                        animate={{ scale: [1, 1.1, 1] }}
+                        transition={{ repeat: Infinity, duration: 1 }}
+                        className="w-10 h-10 rounded-full bg-green-500 flex items-center justify-center"
+                      >
+                        <PhoneCall className="w-5 h-5 text-white" />
+                      </motion.div>
+                      <div>
+                        <span className="text-white font-semibold">Active Call</span>
+                        <div className="text-green-400 text-xs flex items-center gap-1">
+                          <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+                          Sarah Johnson
+                        </div>
+                      </div>
                     </div>
-                    
-                    {/* Phone animation */}
-                    <motion.div
-                      animate={{ rotate: [0, -10, 10, -10, 0] }}
-                      transition={{ repeat: Infinity, duration: 0.5 }}
-                      className="absolute -right-2 -bottom-2 w-10 h-10 rounded-full bg-green-500 flex items-center justify-center"
-                    >
-                      <Phone className="w-5 h-5 text-white" />
-                    </motion.div>
-                  </motion.div>
-
-                  <h4 className="text-white font-semibold text-lg mb-2">RSVP Manager Agent</h4>
-                  <p className="text-white/60 text-sm mb-6">Confirming attendees...</p>
-
-                  {/* Call Counter */}
-                  <div className="text-center">
-                    <motion.div
-                      key={callCount}
-                      initial={{ scale: 1.2 }}
-                      animate={{ scale: 1 }}
-                      className="text-5xl font-bold text-indigo-400 mb-2"
-                    >
-                      {callCount}
-                    </motion.div>
-                    <span className="text-white/60">of 50 confirmed</span>
+                    <div className="text-white/60 text-sm font-mono">
+                      {formatDuration(callDuration)}
+                    </div>
                   </div>
 
-                  {/* Progress bar */}
-                  <div className="w-full max-w-xs mt-6">
-                    <div className="h-2 bg-white/10 rounded-full overflow-hidden">
+                  {/* Call Conversation */}
+                  <div className="flex-1 space-y-4 overflow-y-auto">
+                    {/* Agent Message */}
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="flex gap-3"
+                    >
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center flex-shrink-0">
+                        <Users className="w-4 h-4 text-white" />
+                      </div>
+                      <div className="bg-indigo-600/30 rounded-2xl rounded-tl-md px-4 py-3 max-w-[85%]">
+                        <p className="text-xs text-indigo-300 mb-1 font-medium">RSVP Agent</p>
+                        <p className="text-white text-sm">
+                          {agentCallMessage.slice(0, agentMessageIndex)}
+                          {agentMessageIndex < agentCallMessage.length && (
+                            <span className="animate-pulse">|</span>
+                          )}
+                        </p>
+                      </div>
+                    </motion.div>
+
+                    {/* Customer Response */}
+                    <AnimatePresence>
+                      {showCustomerResponse && (
+                        <motion.div
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className="flex gap-3 justify-end"
+                        >
+                          <div className="bg-white/10 rounded-2xl rounded-tr-md px-4 py-3 max-w-[85%]">
+                            <p className="text-xs text-white/50 mb-1 font-medium">Sarah Johnson</p>
+                            <p className="text-white text-sm">
+                              Yes, absolutely! I've been looking forward to it. Count me in! 🎉
+                            </p>
+                          </div>
+                          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-pink-400 to-rose-500 flex items-center justify-center flex-shrink-0 text-white text-xs font-bold">
+                            SJ
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+
+                    {/* Confirmation */}
+                    <AnimatePresence>
+                      {showCustomerResponse && (
+                        <motion.div
+                          initial={{ opacity: 0, scale: 0.9 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          transition={{ delay: 0.5 }}
+                          className="flex justify-center"
+                        >
+                          <div className="bg-green-500/20 border border-green-500/30 rounded-full px-4 py-2 flex items-center gap-2">
+                            <Check className="w-4 h-4 text-green-400" />
+                            <span className="text-green-400 text-sm font-medium">RSVP Confirmed!</span>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+
+                  {/* Call Stats */}
+                  <div className="mt-4 pt-4 border-t border-white/10 grid grid-cols-2 gap-4">
+                    <div className="text-center p-3 rounded-lg bg-white/5">
                       <motion.div
-                        className="h-full bg-gradient-to-r from-indigo-500 to-purple-500"
-                        style={{ width: `${(callCount / 50) * 100}%` }}
-                      />
+                        key={callCount}
+                        initial={{ scale: 1.2 }}
+                        animate={{ scale: 1 }}
+                        className="text-2xl font-bold text-indigo-400"
+                      >
+                        {callCount}
+                      </motion.div>
+                      <div className="text-white/60 text-xs">Confirmed</div>
+                    </div>
+                    <div className="text-center p-3 rounded-lg bg-white/5">
+                      <div className="text-2xl font-bold text-white/40">50</div>
+                      <div className="text-white/60 text-xs">Total Invites</div>
                     </div>
                   </div>
                 </div>
