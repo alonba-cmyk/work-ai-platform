@@ -515,7 +515,7 @@ export function IsometricCard({
           background: styling.bgGradient,
           borderColor: styling.borderColor,
           boxShadow: '0 2px 8px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.05)',
-          minHeight: '140px'
+          minHeight: (type === 'agent' || type === 'vibe') && image ? '200px' : '140px'
         }}
       >
         {/* Shine effect on hover */}
@@ -538,14 +538,14 @@ export function IsometricCard({
         {/* Content - Full height image for agents with images, or icon layout for others */}
         {image && (type === 'agent' || type === 'vibe') ? (
           <>
-            {/* Full height image */}
-            <div className="relative h-full flex flex-col">
+            {/* Full height image - absolute positioning to fill entire card */}
+            <div className="absolute inset-0">
               <img 
                 src={image} 
                 alt={title} 
                 className="w-full h-full object-cover"
                 style={{ 
-                  objectPosition: 'center',
+                  objectPosition: 'top center',
                 }}
               />
               
