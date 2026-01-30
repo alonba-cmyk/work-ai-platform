@@ -314,6 +314,25 @@ export function KnowledgeBaseEditor({ defaultTab, onTabChange, onBack }: Knowled
     resetPendingIntentChanges();
   };
 
+  // Handle modal close with unsaved changes check
+  const handleCloseModal = () => {
+    if (hasUnsavedIntentChanges && !confirm('You have unsaved changes. Discard?')) {
+      return;
+    }
+    resetForm(true);
+  };
+
+  // ESC key handler for modal
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && (showAddForm || editingId)) {
+        handleCloseModal();
+      }
+    };
+    window.addEventListener('keydown', handleEsc);
+    return () => window.removeEventListener('keydown', handleEsc);
+  }, [showAddForm, editingId, hasUnsavedIntentChanges]);
+
   const handleAdd = async () => {
     if (!formData.name.trim()) return;
 
@@ -634,61 +653,97 @@ export function KnowledgeBaseEditor({ defaultTab, onTabChange, onBack }: Knowled
           </button>
         </div>
 
-        {/* Add/Edit Form */}
+        {/* Modal Add/Edit Form */}
         {(showAddForm || editingId) && (
-          <div className="bg-gray-800 rounded-xl p-6 border border-gray-700 mb-6">
-            <h4 className="text-lg font-semibold text-white mb-4">
-              {editingId ? `Edit ${currentTab.label.slice(0, -1)}` : `Add New ${currentTab.label.slice(0, -1)}`}
-            </h4>
-
-            <div className="grid grid-cols-2 gap-6">
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">Name *</label>
-                  <input
-                    type="text"
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    placeholder={activeTab === 'products' ? 'e.g. Work Management' : 'e.g. Content Writer'}
-                  />
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            {/* Backdrop */}
+            <div 
+              className="absolute inset-0 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200"
+              onClick={handleCloseModal}
+            />
+            
+            {/* Modal Content */}
+            <div className="relative bg-gray-900 rounded-2xl border border-gray-700 w-full max-w-4xl max-h-[90vh] overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+              {/* Modal Header */}
+              <div className="flex items-center justify-between px-8 py-5 border-b border-gray-700 bg-gray-800/50">
+                <div className="flex items-center gap-3">
+                  <div 
+                    className="w-10 h-10 rounded-xl flex items-center justify-center"
+                    style={{ backgroundColor: `${currentTab.color}20` }}
+                  >
+                    {currentTab.iconImage ? (
+                      <img src={currentTab.iconImage} alt="" className="w-6 h-6 object-contain" />
+                    ) : (
+                      <currentTab.icon className="w-5 h-5" style={{ color: currentTab.color }} />
+                    )}
+                  </div>
+                  <div>
+                    <h4 className="text-lg font-semibold text-white">
+                      {editingId ? `Edit ${currentTab.label.slice(0, -1)}` : `Add New ${currentTab.label.slice(0, -1)}`}
+                    </h4>
+                    <p className="text-sm text-gray-400">
+                      {editingId ? 'Update the details below' : 'Fill in the details to create a new item'}
+                    </p>
+                  </div>
                 </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">Description</label>
-                  <textarea
-                    value={formData.description}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    rows={3}
-                    className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
-                    placeholder="What does this do?"
-                  />
-                </div>
+                <button 
+                  onClick={handleCloseModal}
+                  className="p-2 hover:bg-gray-700 rounded-lg transition-colors"
+                >
+                  <X className="w-5 h-5 text-gray-400 hover:text-white" />
+                </button>
               </div>
 
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">Value Proposition</label>
-                  <textarea
-                    value={formData.value}
-                    onChange={(e) => setFormData({ ...formData, value: e.target.value })}
-                    rows={2}
-                    className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
-                    placeholder="What value does this provide?"
-                  />
-                </div>
+              {/* Modal Body - Scrollable */}
+              <div className="px-8 py-6 overflow-y-auto max-h-[calc(90vh-180px)]">
+                <div className="grid grid-cols-2 gap-6">
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">Name *</label>
+                      <input
+                        type="text"
+                        value={formData.name}
+                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                        className="w-full px-4 py-3 bg-gray-800 border border-gray-600 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                        placeholder={activeTab === 'products' ? 'e.g. Work Management' : 'e.g. Content Writer'}
+                      />
+                    </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">Image</label>
-                  <ImageUploader
-                    currentImage={formData.image}
-                    onUpload={(url) => setFormData({ ...formData, image: url })}
-                    folder="knowledge"
-                    label="Upload Image"
-                  />
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">Description</label>
+                      <textarea
+                        value={formData.description}
+                        onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                        rows={4}
+                        className="w-full px-4 py-3 bg-gray-800 border border-gray-600 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none transition-all"
+                        placeholder="What does this do?"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">Value Proposition</label>
+                      <textarea
+                        value={formData.value}
+                        onChange={(e) => setFormData({ ...formData, value: e.target.value })}
+                        rows={3}
+                        className="w-full px-4 py-3 bg-gray-800 border border-gray-600 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none transition-all"
+                        placeholder="What value does this provide?"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">Image</label>
+                      <ImageUploader
+                        currentImage={formData.image}
+                        onUpload={(url) => setFormData({ ...formData, image: url })}
+                        folder="knowledge"
+                        label="Upload Image"
+                      />
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
 
             {/* Intent Type Assignment Section - Only show when editing */}
             {editingId && (
@@ -867,21 +922,30 @@ export function KnowledgeBaseEditor({ defaultTab, onTabChange, onBack }: Knowled
               </div>
             )}
 
-            <div className="flex gap-3 mt-6">
-              <button
-                onClick={editingId ? () => handleUpdate(editingId) : handleAdd}
-                className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 rounded-lg text-white transition-colors"
-              >
-                <Save className="w-4 h-4" />
-                {editingId ? 'Update' : 'Add'}
-              </button>
-              <button
-                onClick={resetForm}
-                className="flex items-center gap-2 px-4 py-2 bg-gray-600 hover:bg-gray-500 rounded-lg text-white transition-colors"
-              >
-                <X className="w-4 h-4" />
-                Cancel
-              </button>
+            </div>
+
+              {/* Modal Footer - Sticky */}
+              <div className="flex items-center justify-between px-8 py-5 border-t border-gray-700 bg-gray-800/50">
+                <div className="text-sm text-gray-400">
+                  {editingId ? 'Press ESC to cancel' : 'Fill in all required fields'}
+                </div>
+                <div className="flex gap-3">
+                  <button
+                    onClick={handleCloseModal}
+                    className="flex items-center gap-2 px-5 py-2.5 bg-gray-700 hover:bg-gray-600 rounded-xl text-white transition-colors"
+                  >
+                    <X className="w-4 h-4" />
+                    Cancel
+                  </button>
+                  <button
+                    onClick={editingId ? () => handleUpdate(editingId) : handleAdd}
+                    className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 rounded-xl text-white font-medium transition-colors"
+                  >
+                    <Save className="w-4 h-4" />
+                    {editingId ? 'Save Changes' : 'Add Item'}
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         )}
