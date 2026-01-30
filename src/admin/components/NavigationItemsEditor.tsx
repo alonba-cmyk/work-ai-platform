@@ -919,11 +919,12 @@ export function NavigationItemsEditor({ type, title, icon, onNavigateToKnowledge
               <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
                 <button
                   onClick={() => handleToggleActive(item.id, item.is_active)}
-                  className={`px-3 py-1 rounded-full text-xs font-medium ${
+                  className={`px-3 py-1 rounded-full text-xs font-medium cursor-pointer transition-all ${
                     item.is_active
-                      ? 'bg-green-500/20 text-green-400'
-                      : 'bg-gray-700 text-gray-400'
+                      ? 'bg-green-500/20 text-green-400 hover:bg-green-500/30'
+                      : 'bg-gray-700 text-gray-400 hover:bg-gray-600 hover:text-white'
                   }`}
+                  title={item.is_active ? 'לחץ להסתרה' : 'לחץ להפעלה'}
                 >
                   {item.is_active ? 'Active' : 'Hidden'}
                 </button>
