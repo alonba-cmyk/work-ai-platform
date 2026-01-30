@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   TrendingUp, 
@@ -50,8 +50,12 @@ import {
   LineChart,
   UserSearch,
   ClipboardCheck,
-  IdCard
+  IdCard,
+  Loader2
 } from 'lucide-react';
+
+// Import Supabase hooks for live data
+import { useDepartments, useDepartmentData } from '@/hooks/useSupabase';
 
 // Import avatar images from Figma
 import imgAvatar1 from '@/assets/a8016eb62d3e284810c5691fa950de5343f7d776.png';
@@ -105,9 +109,7 @@ import { TopNavigationSelector } from '@/app/components/TopNavigationSelector';
 import { DepartmentSidebar } from '@/app/components/DepartmentSidebar';
 import { CustomPromptInput } from '@/app/components/CustomPromptInput';
 
-// Import additional items data
-import type { AdditionalAgent, AdditionalVibeApp, AdditionalSidekickAction } from '@/app/data/additionalItems';
-import { additionalAgentsByDepartment, additionalVibeAppsByDepartment, additionalSidekickActionsByDepartment } from '@/app/data/additionalItems';
+// Additional items data is now loaded from Supabase
 
 type Department = 'operations' | 'marketing' | 'sales' | 'support' | 'product' | 'legal' | 'finance' | 'hr';
 
@@ -921,6 +923,65 @@ const aiTransformationList = [
   }
 ];
 
+// Icon name to component mapping
+const iconMap: Record<string, any> = {
+  'TrendingUp': TrendingUp,
+  'BarChart3': BarChart3,
+  'Users': Users,
+  'Mail': Mail,
+  'Award': Award,
+  'MessageSquare': MessageSquare,
+  'Sparkles': Sparkles,
+  'Share2': Share2,
+  'Calendar': Calendar,
+  'FolderKanban': FolderKanban,
+  'Workflow': Workflow,
+  'BarChart': BarChart,
+  'Ticket': Ticket,
+  'HeadphonesIcon': HeadphonesIcon,
+  'Shield': Shield,
+  'Code': Code,
+  'Zap': Zap,
+  'FileCheck': FileCheck,
+  'Search': Search,
+  'Receipt': Receipt,
+  'DollarSign': DollarSign,
+  'PieChart': PieChart,
+  'UserPlus': UserPlus,
+  'Briefcase': Briefcase,
+  'UserCheck': UserCheck,
+  'Target': Target,
+  'Clock': Clock,
+  'Star': Star,
+  'Link2': Link2,
+  'CalendarCheck': CalendarCheck,
+  'UsersRound': UsersRound,
+  'Send': Send,
+  'FileText': FileText,
+  'TrendingUpDown': TrendingUpDown,
+  'Phone': Phone,
+  'AlertCircle': AlertCircle,
+  'GitBranch': GitBranch,
+  'ListChecks': ListChecks,
+  'Wrench': Wrench,
+  'FileBarChart': FileBarChart,
+  'Scale': Scale,
+  'Gavel': Gavel,
+  'FolderSearch': FolderSearch,
+  'Calculator': Calculator,
+  'Wallet': Wallet,
+  'LineChart': LineChart,
+  'UserSearch': UserSearch,
+  'ClipboardCheck': ClipboardCheck,
+  'IdCard': IdCard
+};
+
+// Helper function to get icon component from string name
+const getIconComponent = (iconName: string | null | undefined): any => {
+  if (!iconName) return Sparkles; // Default icon
+  return iconMap[iconName] || Sparkles;
+};
+
 // Mapping from pain points and outcomes to departments
 const selectionToDepartment: Record<string, Department> = {
   // Pain points
@@ -953,14 +1014,101 @@ const selectionToDepartment: Record<string, Department> = {
 };
 
 export default function App() {
+  const [selectedDepartmentId, setSelectedDepartmentId] = useState<string | null>(null);
   const [selectedDepartment, setSelectedDepartment] = useState<Department | null>(null);
   const [showSolution, setShowSolution] = useState(false);
   const [selectionMode, setSelectionMode] = useState<SelectionMode>('department');
+  
+  // Fetch departments from Supabase
+  const { departments: supabaseDepartments, loading: departmentsLoading } = useDepartments();
+  
+  // Fetch department content when a department is selected
+  const { 
+    products: supabaseProducts, 
+    agents: supabaseAgents, 
+    vibeApps: supabaseVibeApps, 
+    sidekickActions: supabaseSidekickActions,
+    loading: contentLoading 
+  } = useDepartmentData(selectedDepartmentId);
+  
+  // Map Supabase departments to the format expected by UI components
+  const dynamicDepartmentsList = useMemo(() => {
+    if (!supabaseDepartments || supabaseDepartments.length === 0) {
+      return departmentsList; // Fallback to hardcoded if Supabase is empty
+    }
+    return supabaseDepartments.map(dept => ({
+      id: dept.name as Department,
+      title: dept.title,
+      desc: dept.description,
+      avatarImage: dept.avatar_image,
+      avatarBgColor: dept.avatar_color,
+      supabaseId: dept.id // Keep the Supabase ID for data fetching
+    }));
+  }, [supabaseDepartments]);
+  
+  // Map Supabase content to UI format
+  const mappedProducts = useMemo(() => {
+    if (!supabaseProducts || supabaseProducts.length === 0) {
+      return selectedDepartment ? departmentSolutions[selectedDepartment]?.products || [] : [];
+    }
+    return supabaseProducts.map(p => ({
+      name: p.name,
+      description: p.description,
+      value: p.value,
+      image: p.image || undefined,
+      useCases: p.use_cases || [],
+      replacesTools: p.replaces_tools || []
+    }));
+  }, [supabaseProducts, selectedDepartment]);
+  
+  const mappedAgents = useMemo(() => {
+    if (!supabaseAgents || supabaseAgents.length === 0) {
+      return selectedDepartment ? departmentSolutions[selectedDepartment]?.agents || [] : [];
+    }
+    return supabaseAgents.map(a => ({
+      name: a.name,
+      description: a.description,
+      value: a.value,
+      image: a.image || undefined
+    }));
+  }, [supabaseAgents, selectedDepartment]);
+  
+  const mappedVibeApps = useMemo(() => {
+    if (!supabaseVibeApps || supabaseVibeApps.length === 0) {
+      return selectedDepartment ? departmentSolutions[selectedDepartment]?.vibeApps || [] : [];
+    }
+    return supabaseVibeApps.map(v => ({
+      name: v.name,
+      icon: getIconComponent(v.icon),
+      value: v.value,
+      replacesTools: v.replaces_tools || [],
+      image: v.image || undefined
+    }));
+  }, [supabaseVibeApps, selectedDepartment]);
+  
+  const mappedSidekickActions = useMemo(() => {
+    if (!supabaseSidekickActions || supabaseSidekickActions.length === 0) {
+      return selectedDepartment ? departmentSolutions[selectedDepartment]?.sidekickCapabilities || [] : [];
+    }
+    return supabaseSidekickActions.map(s => ({
+      name: s.name,
+      description: s.description,
+      value: s.value,
+      image: s.image || undefined
+    }));
+  }, [supabaseSidekickActions, selectedDepartment]);
 
   const handleDepartmentSelect = (selectionId: string) => {
     // Check if it's a pain point or business outcome, map to department
     const mappedDepartment = selectionToDepartment[selectionId] || selectionId as Department;
     setSelectedDepartment(mappedDepartment);
+    
+    // Find the Supabase ID for this department
+    const deptInfo = dynamicDepartmentsList.find(d => d.id === mappedDepartment);
+    if (deptInfo && 'supabaseId' in deptInfo) {
+      setSelectedDepartmentId((deptInfo as any).supabaseId);
+    }
+    
     setShowSolution(true);
     
     // Scroll to solution section
@@ -972,104 +1120,6 @@ export default function App() {
     }, 100);
   };
   
-  // Mapping to add images to additional agents
-  const agentImageMapping: Record<string, string> = {
-    'translator': translatorAgentImage,
-  };
-  
-  // Get all available agents (existing + additional) with images
-  const getAdditionalAgentsWithImages = (department: Department) => {
-    const existingAgents = departmentSolutions[department].agents;
-    const additionalAgents = additionalAgentsByDepartment[department];
-    
-    // Combine existing and additional agents
-    const allAvailableAgents = [
-      ...existingAgents.map(agent => ({
-        name: agent.name,
-        description: agent.description,
-        image: agent.image
-      })),
-      ...additionalAgents.map(agent => ({
-        ...agent,
-        image: agent.image || agentImageMapping[agent.id]
-      }))
-    ];
-    
-    return allAvailableAgents;
-  };
-  
-  // Get all available sidekick actions (existing + additional)
-  const getAllSidekickActions = (department: Department) => {
-    const existingActions = departmentSolutions[department].sidekickCapabilities;
-    const additionalActions = additionalSidekickActionsByDepartment[department];
-    
-    // Combine existing and additional sidekick actions
-    const allAvailableActions = [
-      ...existingActions.map(action => ({
-        name: action.name,
-        description: action.description,
-        value: action.value,
-        image: action.image
-      })),
-      ...additionalActions.map(action => ({
-        name: action.name,
-        description: action.description,
-        value: action.value
-      }))
-    ];
-    
-    return allAvailableActions;
-  };
-  
-  // Additional products that can be added per department
-  const additionalProductsByDepartment: Record<Department, Array<{
-    name: string;
-    description: string;
-    value: string;
-    image?: string;
-    useCases?: string[];
-    replacesTools?: any[];
-  }>> = {
-    marketing: [
-      {
-        name: 'Service',
-        description: 'Deliver exceptional customer service with AI-powered ticketing and support automation',
-        value: 'Resolve customer issues 50% faster with intelligent routing, automated responses, and self-service options'
-      }
-    ],
-    sales: [
-      {
-        name: 'Service',
-        description: 'Deliver exceptional customer service with AI-powered ticketing and support automation',
-        value: 'Resolve customer issues 50% faster'
-      }
-    ],
-    operations: [
-      {
-        name: 'Dev',
-        description: 'Streamline software development with agile project management',
-        value: 'Ship products 40% faster'
-      }
-    ],
-    support: [],
-    product: [],
-    legal: [],
-    finance: [],
-    hr: []
-  };
-  
-  // Get all available products (existing + additional)
-  const getAllProducts = (department: Department) => {
-    const existingProducts = departmentSolutions[department].products;
-    const additionalProducts = additionalProductsByDepartment[department];
-    
-    const allAvailableProducts = [
-      ...existingProducts,
-      ...additionalProducts
-    ];
-    
-    return allAvailableProducts;
-  };
 
   // Get the appropriate list based on selection mode
   const getDisplayList = () => {
@@ -1081,7 +1131,8 @@ export default function App() {
       case 'transformation':
         return aiTransformationList;
       default:
-        return departmentsList;
+        // Use dynamic departments from Supabase
+        return dynamicDepartmentsList;
     }
   };
 
@@ -1200,25 +1251,32 @@ export default function App() {
               />
               
               {/* AI Work Platform Visualization - Full Width with Header Inside */}
-              <SolutionDisplay
-                department={selectedDepartment}
-                products={departmentSolutions[selectedDepartment].products}
-                capabilities={departmentSolutions[selectedDepartment].sidekickCapabilities}
-                agents={departmentSolutions[selectedDepartment].agents}
-                vibeApps={departmentSolutions[selectedDepartment].vibeApps}
-                values={departmentSolutions[selectedDepartment].values}
-                availableAgents={getAdditionalAgentsWithImages(selectedDepartment)}
-                availableVibeApps={additionalVibeAppsByDepartment[selectedDepartment]}
-                availableSidekickActions={getAllSidekickActions(selectedDepartment)}
-                availableProducts={getAllProducts(selectedDepartment)}
-                selectedDepartmentInfo={getDisplayList().find(d => d.id === selectedDepartment)}
-                onChangeSelection={() => {
-                  document.getElementById('selector-section')?.scrollIntoView({ 
-                    behavior: 'smooth',
-                    block: 'center'
-                  });
-                }}
-              />
+              {contentLoading ? (
+                <div className="flex items-center justify-center py-20">
+                  <Loader2 className="w-8 h-8 text-primary animate-spin" />
+                  <span className="ml-3 text-muted-foreground">Loading content...</span>
+                </div>
+              ) : (
+                <SolutionDisplay
+                  department={selectedDepartment}
+                  products={mappedProducts}
+                  capabilities={mappedSidekickActions}
+                  agents={mappedAgents}
+                  vibeApps={mappedVibeApps}
+                  values={departmentSolutions[selectedDepartment]?.values || []}
+                  availableAgents={mappedAgents}
+                  availableVibeApps={mappedVibeApps}
+                  availableSidekickActions={mappedSidekickActions}
+                  availableProducts={mappedProducts}
+                  selectedDepartmentInfo={getDisplayList().find(d => d.id === selectedDepartment)}
+                  onChangeSelection={() => {
+                    document.getElementById('selector-section')?.scrollIntoView({ 
+                      behavior: 'smooth',
+                      block: 'center'
+                    });
+                  }}
+                />
+              )}
             </div>
           </motion.section>
         )}
