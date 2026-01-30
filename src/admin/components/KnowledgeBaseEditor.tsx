@@ -1081,16 +1081,16 @@ export function KnowledgeBaseEditor({ defaultTab, onTabChange, onBack }: Knowled
                   <div className="mb-6 pt-6 border-t border-gray-700/50">
                     <div className="flex items-center justify-between mb-3">
                       <label className="text-sm font-medium text-gray-400">Additional Images (Gallery)</label>
-                      <span className="text-xs text-gray-500">{formData.images.length} images</span>
+                      <span className="text-xs text-gray-500">{formData.images.length} image{formData.images.length !== 1 ? 's' : ''}</span>
                     </div>
-                    <div className="flex flex-wrap gap-3">
+                    <div className="flex flex-wrap gap-3 items-center">
                       {/* Existing gallery images */}
                       {formData.images.map((img, index) => (
                         <div key={index} className="relative group">
                           <img 
                             src={img} 
                             alt={`Gallery ${index + 1}`} 
-                            className="w-20 h-20 object-cover rounded-lg border border-gray-700"
+                            className="w-16 h-16 object-cover rounded-lg border border-gray-700 hover:border-indigo-500 transition-colors"
                           />
                           <button
                             type="button"
@@ -1099,28 +1099,50 @@ export function KnowledgeBaseEditor({ defaultTab, onTabChange, onBack }: Knowled
                               newImages.splice(index, 1);
                               setFormData({ ...formData, images: newImages });
                             }}
-                            className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center hover:bg-red-600 transition-colors opacity-0 group-hover:opacity-100"
+                            className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center hover:bg-red-600 transition-colors opacity-0 group-hover:opacity-100 shadow-lg"
                           >
                             <X className="w-3 h-3 text-white" />
                           </button>
                         </div>
                       ))}
                       
-                      {/* Add new image button */}
-                      <div className="w-20 h-20">
-                        <ImageUploader
-                          currentImage={null}
-                          onUpload={(url) => {
-                            if (url) {
-                              setFormData({ ...formData, images: [...formData.images, url] });
+                      {/* Add new image button - compact design */}
+                      <label className="w-16 h-16 border-2 border-dashed border-gray-600 rounded-lg flex flex-col items-center justify-center cursor-pointer hover:border-indigo-500 hover:bg-indigo-500/5 transition-all group">
+                        <Plus className="w-5 h-5 text-gray-500 group-hover:text-indigo-400" />
+                        <span className="text-[10px] text-gray-500 group-hover:text-indigo-400 mt-0.5">Add</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={async (e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              // Use the upload hook manually
+                              const formDataUpload = new FormData();
+                              formDataUpload.append('file', file);
+                              
+                              const fileExt = file.name.split('.').pop();
+                              const fileName = `knowledge/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+                              
+                              const { error } = await supabase.storage
+                                .from('images')
+                                .upload(fileName, file);
+                              
+                              if (!error) {
+                                const { data } = supabase.storage.from('images').getPublicUrl(fileName);
+                                if (data.publicUrl) {
+                                  setFormData({ ...formData, images: [...formData.images, data.publicUrl] });
+                                }
+                              }
                             }
+                            e.target.value = ''; // Reset input
                           }}
-                          folder="knowledge"
-                          label="+"
                         />
-                      </div>
+                      </label>
                     </div>
-                    <p className="text-xs text-gray-500 mt-2">Add multiple images to show different views of this product</p>
+                    {formData.images.length === 0 && (
+                      <p className="text-xs text-gray-500 mt-2">Click + to add images for different views of this product</p>
+                    )}
                   </div>
                 )}
 
