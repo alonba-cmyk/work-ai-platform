@@ -280,7 +280,7 @@ export function AnimatedStoryView({ department, agents = [] }: AnimatedStoryView
         }}
       >
         {/* Board Background - Left Column (50%) */}
-        <div className="rounded-xl overflow-hidden relative"
+        <div className="rounded-xl overflow-hidden relative min-w-0"
           style={{
             background: 'rgba(0, 0, 0, 0.3)',
             border: '1px solid rgba(255, 255, 255, 0.1)'
@@ -399,7 +399,7 @@ export function AnimatedStoryView({ department, agents = [] }: AnimatedStoryView
         </div>
 
         {/* Right Column - Dynamic Content (50%) */}
-        <div className="flex flex-col">
+        <div className="flex flex-col min-w-0">
           <AnimatePresence mode="wait">
             {/* Step 1: Sidekick Chat */}
             {currentStep === 0 && (
