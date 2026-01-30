@@ -9,8 +9,9 @@ interface InActionViewProps {
 }
 
 export function InActionView({ 
-  department
+  department,
+  agents
 }: InActionViewProps) {
-  // Render the animated story view
-  return <AnimatedStoryView department={department} />;
+  // Render the animated story view with agents data
+  return <AnimatedStoryView department={department} agents={agents} />;
 }

@@ -4,6 +4,7 @@ import { Play, Pause, SkipForward, RotateCcw, Zap, Sparkles, Users, Phone, Check
 
 interface AnimatedStoryViewProps {
   department: string;
+  agents?: Array<{ name: string; value?: string; image?: string }>;
   onClose?: () => void;
 }
 
@@ -22,8 +23,11 @@ const storySteps: StoryStep[] = [
   { id: 4, title: 'Success!', description: 'Watch results appear in real-time', duration: 5000 },
 ];
 
-export function AnimatedStoryView({ department }: AnimatedStoryViewProps) {
+export function AnimatedStoryView({ department, agents = [] }: AnimatedStoryViewProps) {
   const [currentStep, setCurrentStep] = useState(0);
+  
+  // Get the featured agent (first one with an image, or first one)
+  const featuredAgent = agents.find(a => a.image) || agents[0];
   const [isPlaying, setIsPlaying] = useState(true);
   const [isComplete, setIsComplete] = useState(false);
   
@@ -280,20 +284,20 @@ export function AnimatedStoryView({ department }: AnimatedStoryViewProps) {
         </span>
       </motion.div>
 
-      {/* Main Animation Stage - FULL WIDTH */}
+      {/* Main Animation Stage - 100% WIDTH */}
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ delay: 0.3 }}
-        className="relative rounded-2xl overflow-hidden"
+        className="relative rounded-2xl overflow-hidden grid grid-cols-2 gap-6 p-6"
         style={{
           background: 'linear-gradient(135deg, rgba(30, 30, 40, 0.95), rgba(20, 20, 30, 0.98))',
           border: '1px solid rgba(255, 255, 255, 0.1)',
           minHeight: '520px'
         }}
       >
-        {/* Board Background - Left Side */}
-        <div className="absolute left-6 top-6 bottom-6 w-[55%] rounded-xl overflow-hidden"
+        {/* Board Background - Left Column (50%) */}
+        <div className="rounded-xl overflow-hidden relative"
           style={{
             background: 'rgba(0, 0, 0, 0.3)',
             border: '1px solid rgba(255, 255, 255, 0.1)'
@@ -358,17 +362,27 @@ export function AnimatedStoryView({ department }: AnimatedStoryViewProps) {
                   transition={{ repeat: currentStep === 2 ? Infinity : 0, duration: 1.5 }}
                   className="relative"
                 >
-                  {/* Glowing circle */}
+                  {/* Glowing circle with Agent Image */}
                   <div 
-                    className="w-20 h-20 rounded-full flex items-center justify-center"
+                    className="w-20 h-20 rounded-full flex items-center justify-center overflow-hidden"
                     style={{
-                      background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+                      background: featuredAgent?.image ? 'transparent' : 'linear-gradient(135deg, #6366f1, #8b5cf6)',
                       boxShadow: currentStep === 2 
                         ? '0 0 40px rgba(99, 102, 241, 0.6), 0 0 80px rgba(139, 92, 246, 0.3)' 
-                        : '0 0 20px rgba(99, 102, 241, 0.4)'
+                        : '0 0 20px rgba(99, 102, 241, 0.4)',
+                      border: '3px solid rgba(99, 102, 241, 0.8)'
                     }}
                   >
-                    <Users className="w-10 h-10 text-white" />
+                    {featuredAgent?.image ? (
+                      <img 
+                        src={featuredAgent.image} 
+                        alt={featuredAgent.name}
+                        className="w-full h-full object-cover"
+                        style={{ transform: 'scale(1.2)' }}
+                      />
+                    ) : (
+                      <Users className="w-10 h-10 text-white" />
+                    )}
                   </div>
                   
                   {/* Status indicator */}
@@ -393,7 +407,7 @@ export function AnimatedStoryView({ department }: AnimatedStoryViewProps) {
 
                   {/* Agent label */}
                   <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 whitespace-nowrap">
-                    <span className="text-white/60 text-xs font-medium">RSVP Agent</span>
+                    <span className="text-white/60 text-xs font-medium">{featuredAgent?.name || 'RSVP Agent'}</span>
                   </div>
                 </motion.div>
               </motion.div>
@@ -401,8 +415,8 @@ export function AnimatedStoryView({ department }: AnimatedStoryViewProps) {
           </AnimatePresence>
         </div>
 
-        {/* Right Side - Dynamic Content */}
-        <div className="absolute right-6 top-6 bottom-6 w-[38%]">
+        {/* Right Column - Dynamic Content (50%) */}
+        <div className="flex flex-col">
           <AnimatePresence mode="wait">
             {/* Step 1: Sidekick Chat */}
             {currentStep === 0 && (
@@ -632,11 +646,20 @@ export function AnimatedStoryView({ department }: AnimatedStoryViewProps) {
                       animate={{ opacity: 1, y: 0 }}
                       className="flex gap-3"
                     >
-                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center flex-shrink-0">
-                        <Users className="w-4 h-4 text-white" />
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                        {featuredAgent?.image ? (
+                          <img 
+                            src={featuredAgent.image} 
+                            alt={featuredAgent.name}
+                            className="w-full h-full object-cover"
+                            style={{ transform: 'scale(1.3)' }}
+                          />
+                        ) : (
+                          <Users className="w-4 h-4 text-white" />
+                        )}
                       </div>
                       <div className="bg-indigo-600/30 rounded-2xl rounded-tl-md px-4 py-3 max-w-[85%]">
-                        <p className="text-xs text-indigo-300 mb-1 font-medium">RSVP Agent</p>
+                        <p className="text-xs text-indigo-300 mb-1 font-medium">{featuredAgent?.name || 'RSVP Agent'}</p>
                         <p className="text-white text-sm">
                           {agentCallMessage.slice(0, agentMessageIndex)}
                           {agentMessageIndex < agentCallMessage.length && (
