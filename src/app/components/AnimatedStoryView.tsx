@@ -2,7 +2,8 @@ import { motion, AnimatePresence } from 'motion/react';
 import { useState, useEffect, useCallback } from 'react';
 import { Play, Pause, SkipForward, RotateCcw, Sparkles, Users, Phone, Check, Mail, Share2, PhoneCall } from 'lucide-react';
 import sidekickLogo from '@/assets/1babfe88a809998ec3c5c5d597d8051ef7639a6f.png';
-import { CRMLogo, CampaignsLogo } from './ProductLogos';
+import mondayCrmLogo from '@/assets/monday-crm-logo.png';
+import mondayCampaignsLogo from '@/assets/monday-campaigns-logo.png';
 
 interface AnimatedStoryViewProps {
   department: string;
@@ -330,9 +331,7 @@ export function AnimatedStoryView({ department, agents = [] }: AnimatedStoryView
         >
           {/* Board Header - monday CRM */}
           <div className="flex items-center gap-2 p-3 border-b border-white/10">
-            <div className="w-8 h-8 rounded bg-[#00D2D2] flex items-center justify-center flex-shrink-0">
-              <span className="text-white font-bold text-[10px]">CRM</span>
-            </div>
+            <img src={mondayCrmLogo} alt="monday CRM" className="w-8 h-8 rounded flex-shrink-0" />
             <div className="flex flex-col">
               <span className="text-white/60 text-[10px] leading-none">monday</span>
               <span className="text-white font-semibold text-sm leading-none">CRM Leads</span>
@@ -700,9 +699,7 @@ export function AnimatedStoryView({ department, agents = [] }: AnimatedStoryView
                 >
                   {/* monday campaigns Header */}
                   <div className="flex items-center gap-2 mb-4 pb-3 border-b border-white/10">
-                    <div className="w-10 h-10 rounded bg-[#00D2D2] flex items-center justify-center flex-shrink-0">
-                      <Mail className="w-5 h-5 text-white" />
-                    </div>
+                    <img src={mondayCampaignsLogo} alt="monday campaigns" className="w-10 h-10 rounded flex-shrink-0" />
                     <div className="flex flex-col">
                       <span className="text-white/60 text-[10px] leading-none">monday</span>
                       <span className="text-white font-semibold text-sm leading-tight">campaigns</span>
