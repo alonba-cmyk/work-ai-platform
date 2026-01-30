@@ -284,12 +284,9 @@ export function AnimatedStoryView({ department, agents = [] }: AnimatedStoryView
         </span>
       </motion.div>
 
-      {/* Main Animation Stage - 100% WIDTH */}
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ delay: 0.3 }}
-        className="relative rounded-2xl overflow-hidden grid grid-cols-2 gap-6 p-6"
+      {/* Main Animation Stage - 100% WIDTH - NO SCALE ANIMATION */}
+      <div
+        className="relative rounded-2xl overflow-hidden grid grid-cols-2 gap-6 p-6 w-full"
         style={{
           background: 'linear-gradient(135deg, rgba(30, 30, 40, 0.95), rgba(20, 20, 30, 0.98))',
           border: '1px solid rgba(255, 255, 255, 0.1)',
@@ -892,7 +889,7 @@ export function AnimatedStoryView({ department, agents = [] }: AnimatedStoryView
             )}
           </AnimatePresence>
         </div>
-      </motion.div>
+      </div>
 
       {/* Bottom narrative */}
       <motion.div
