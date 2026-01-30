@@ -2,6 +2,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { useState, useEffect, useCallback } from 'react';
 import { Play, Pause, SkipForward, RotateCcw, Sparkles, Users, Phone, Check, Mail, Share2, PhoneCall } from 'lucide-react';
 import sidekickLogo from '@/assets/1babfe88a809998ec3c5c5d597d8051ef7639a6f.png';
+import { CRMLogo, CampaignsLogo } from './ProductLogos';
 
 interface AnimatedStoryViewProps {
   department: string;
@@ -327,49 +328,62 @@ export function AnimatedStoryView({ department, agents = [] }: AnimatedStoryView
             border: '1px solid rgba(255, 255, 255, 0.1)'
           }}
         >
-          {/* Board Header */}
-          <div className="flex items-center gap-3 p-4 border-b border-white/10">
-            <div className="w-3 h-3 rounded-full bg-green-500" />
-            <span className="text-white/80 font-semibold">Event Campaign Board</span>
+          {/* Board Header - monday CRM */}
+          <div className="flex items-center gap-2 p-3 border-b border-white/10">
+            <div className="w-8 h-8 rounded bg-[#00D2D2] flex items-center justify-center flex-shrink-0">
+              <span className="text-white font-bold text-[10px]">CRM</span>
+            </div>
+            <div className="flex flex-col">
+              <span className="text-white/60 text-[10px] leading-none">monday</span>
+              <span className="text-white font-semibold text-sm leading-none">CRM Leads</span>
+            </div>
           </div>
           
           {/* Board Rows */}
           <div className="p-4 space-y-2">
-            {['Sarah Johnson', 'Mike Chen', 'Emily Davis', 'Alex Kim', 'Jordan Lee'].map((name, index) => (
-              <motion.div
-                key={name}
-                className="h-12 rounded-lg flex items-center px-4 gap-4"
-                style={{
-                  background: 'rgba(255, 255, 255, 0.03)',
-                  border: '1px solid rgba(255, 255, 255, 0.05)'
-                }}
-                animate={{
-                  borderColor: confirmedRows.includes(index) 
-                    ? 'rgba(34, 197, 94, 0.5)' 
-                    : 'rgba(255, 255, 255, 0.05)',
-                  boxShadow: confirmedRows.includes(index) 
-                    ? '0 0 20px rgba(34, 197, 94, 0.2)' 
-                    : 'none'
-                }}
-              >
-                <div className="w-4 h-4 rounded border border-white/20" />
-                <span className="text-white/70 text-sm flex-1">{name}</span>
+            {['Sarah Johnson', 'Mike Chen', 'Emily Davis', 'Alex Kim', 'Jordan Lee'].map((name, index) => {
+              // Determine status based on current step
+              const getStatus = () => {
+                if (confirmedRows.includes(index)) return { text: '✓ Attend', bg: 'rgba(34, 197, 94, 0.3)', color: 'rgb(134, 239, 172)' };
+                if (emailConfirmedRows.includes(index)) return { text: index === 2 ? 'Maybe' : '✓ Attend', bg: index === 2 ? 'rgba(253, 171, 61, 0.3)' : 'rgba(34, 197, 94, 0.3)', color: index === 2 ? 'rgb(253, 224, 71)' : 'rgb(134, 239, 172)' };
+                if (emailsSent > index) return { text: 'Invited', bg: 'rgba(99, 102, 241, 0.3)', color: 'rgb(165, 180, 252)' };
+                return { text: 'New Lead', bg: 'rgba(107, 114, 128, 0.3)', color: 'rgb(156, 163, 175)' };
+              };
+              const status = getStatus();
+              const isConfirmed = confirmedRows.includes(index) || (emailConfirmedRows.includes(index) && index !== 2);
+              
+              return (
                 <motion.div
-                  className="h-6 w-24 rounded-full flex items-center justify-center text-xs font-medium"
-                  animate={{
-                    backgroundColor: confirmedRows.includes(index) 
-                      ? 'rgba(34, 197, 94, 0.3)' 
-                      : 'rgba(253, 171, 61, 0.3)',
-                    color: confirmedRows.includes(index) 
-                      ? 'rgb(134, 239, 172)' 
-                      : 'rgb(253, 224, 71)'
+                  key={name}
+                  className="h-12 rounded-lg flex items-center px-4 gap-4"
+                  style={{
+                    background: 'rgba(255, 255, 255, 0.03)',
+                    border: '1px solid rgba(255, 255, 255, 0.05)'
                   }}
-                  transition={{ duration: 0.5 }}
+                  animate={{
+                    borderColor: isConfirmed 
+                      ? 'rgba(34, 197, 94, 0.5)' 
+                      : 'rgba(255, 255, 255, 0.05)',
+                    boxShadow: isConfirmed 
+                      ? '0 0 20px rgba(34, 197, 94, 0.2)' 
+                      : 'none'
+                  }}
                 >
-                  {confirmedRows.includes(index) ? '✓ Confirmed' : 'Pending'}
+                  <div className="w-4 h-4 rounded border border-white/20" />
+                  <span className="text-white/70 text-sm flex-1">{name}</span>
+                  <motion.div
+                    className="h-6 w-24 rounded-full flex items-center justify-center text-xs font-medium"
+                    animate={{
+                      backgroundColor: status.bg,
+                      color: status.color
+                    }}
+                    transition={{ duration: 0.5 }}
+                  >
+                    {status.text}
+                  </motion.div>
                 </motion.div>
-              </motion.div>
-            ))}
+              );
+            })}
           </div>
 
           {/* Agent Avatar on Board - Shows during steps 5, 6, 7 */}
@@ -500,7 +514,7 @@ export function AnimatedStoryView({ department, agents = [] }: AnimatedStoryView
                       </div>
                     </motion.div>
                     
-                    {/* Sidekick response with campaign ideas */}
+                    {/* Sidekick response - What I'll do list */}
                     <AnimatePresence>
                       {showResponse && (
                         <motion.div
@@ -510,29 +524,66 @@ export function AnimatedStoryView({ department, agents = [] }: AnimatedStoryView
                         >
                           <div className="bg-gray-100 rounded-2xl rounded-bl-md px-3 py-2 max-w-[95%] shadow-sm">
                             <p className="text-gray-800 text-sm mb-2">
-                              Here are some campaign ideas for your event:
+                              Great! Here's what I'll do for your event:
                             </p>
+                            <ul className="text-gray-600 text-sm space-y-1.5 mb-3">
+                              <motion.li 
+                                initial={{ opacity: 0, x: -10 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                transition={{ delay: 0.2 }}
+                                className="flex items-center gap-2"
+                              >
+                                <Mail className="w-3 h-3 text-amber-600" /> Email invitations via monday campaigns
+                              </motion.li>
+                              <motion.li 
+                                initial={{ opacity: 0, x: -10 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                transition={{ delay: 0.4 }}
+                                className="flex items-center gap-2"
+                              >
+                                <Phone className="w-3 h-3 text-amber-600" /> AI Agent for phone confirmations
+                              </motion.li>
+                              <motion.li 
+                                initial={{ opacity: 0, x: -10 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                transition={{ delay: 0.6 }}
+                                className="flex items-center gap-2"
+                              >
+                                <Users className="w-3 h-3 text-amber-600" /> RSVP tracking on your CRM
+                              </motion.li>
+                            </ul>
                             
-                            {/* Campaign Cards */}
+                            <motion.p 
+                              initial={{ opacity: 0 }}
+                              animate={{ opacity: 1 }}
+                              transition={{ delay: 0.8 }}
+                              className="text-gray-800 text-sm mb-2"
+                            >
+                              Choose an email creative:
+                            </motion.p>
+                            
+                            {/* Email Creative Cards */}
                             <div className="space-y-2">
                               {[
-                                { name: 'VIP Launch Party', desc: 'Exclusive invite with premium feel', color: 'from-purple-500 to-indigo-600' },
-                                { name: 'Community Meetup', desc: 'Casual networking event style', color: 'from-green-500 to-teal-600' },
-                                { name: 'Product Showcase', desc: 'Professional demo presentation', color: 'from-orange-500 to-pink-600' }
+                                { name: 'VIP Launch Party', subject: 'You\'re Invited: Exclusive VIP Event', preview: 'Join us for an exclusive evening...', color: 'from-purple-500 to-indigo-600' },
+                                { name: 'Community Meetup', subject: 'Let\'s Connect: Community Event', preview: 'We\'d love to see you at our...', color: 'from-green-500 to-teal-600' },
                               ].map((campaign, idx) => (
                                 <motion.div
                                   key={campaign.name}
-                                  initial={{ opacity: 0, x: -20 }}
-                                  animate={{ opacity: 1, x: 0 }}
-                                  transition={{ delay: 0.3 + idx * 0.2 }}
-                                  className="flex items-center gap-2 p-2 rounded-lg bg-white border border-gray-200 hover:border-indigo-300 cursor-pointer transition-all"
+                                  initial={{ opacity: 0, y: 10 }}
+                                  animate={{ opacity: 1, y: 0 }}
+                                  transition={{ delay: 1 + idx * 0.3 }}
+                                  className="p-2 rounded-lg bg-white border border-gray-200 hover:border-indigo-400 cursor-pointer transition-all hover:shadow-md"
                                 >
-                                  <div className={`w-12 h-12 rounded-lg bg-gradient-to-br ${campaign.color} flex items-center justify-center flex-shrink-0`}>
-                                    <Sparkles className="w-5 h-5 text-white" />
-                                  </div>
-                                  <div className="flex-1 min-w-0">
-                                    <p className="text-gray-800 text-sm font-medium truncate">{campaign.name}</p>
-                                    <p className="text-gray-500 text-xs truncate">{campaign.desc}</p>
+                                  <div className="flex items-start gap-2">
+                                    <div className={`w-10 h-10 rounded bg-gradient-to-br ${campaign.color} flex items-center justify-center flex-shrink-0`}>
+                                      <Mail className="w-4 h-4 text-white" />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                      <p className="text-gray-800 text-xs font-semibold truncate">{campaign.name}</p>
+                                      <p className="text-indigo-600 text-[10px] font-medium truncate">{campaign.subject}</p>
+                                      <p className="text-gray-400 text-[10px] truncate">{campaign.preview}</p>
+                                    </div>
                                   </div>
                                 </motion.div>
                               ))}
@@ -648,13 +699,21 @@ export function AnimatedStoryView({ department, agents = [] }: AnimatedStoryView
                   }}
                 >
                   {/* monday campaigns Header */}
-                  <div className="flex items-center gap-3 mb-4 pb-3 border-b border-white/10">
-                    <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center">
+                  <div className="flex items-center gap-2 mb-4 pb-3 border-b border-white/10">
+                    <div className="w-10 h-10 rounded bg-[#00D2D2] flex items-center justify-center flex-shrink-0">
                       <Mail className="w-5 h-5 text-white" />
                     </div>
-                    <div>
-                      <span className="text-white font-semibold">monday campaigns</span>
-                      <div className="text-indigo-400 text-xs">Sending invitations</div>
+                    <div className="flex flex-col">
+                      <span className="text-white/60 text-[10px] leading-none">monday</span>
+                      <span className="text-white font-semibold text-sm leading-tight">campaigns</span>
+                    </div>
+                    <div className="ml-auto flex items-center gap-2">
+                      <motion.div
+                        animate={{ scale: [1, 1.2, 1] }}
+                        transition={{ repeat: Infinity, duration: 1.5 }}
+                        className="w-2 h-2 rounded-full bg-green-400"
+                      />
+                      <span className="text-green-400 text-xs">Sending...</span>
                     </div>
                   </div>
 
