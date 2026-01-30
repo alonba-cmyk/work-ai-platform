@@ -545,7 +545,8 @@ export function IsometricCard({
                 alt={title} 
                 className="w-full h-full object-cover"
                 style={{ 
-                  objectPosition: 'top center',
+                  objectPosition: 'center',
+                  transform: 'scale(1.3)',
                 }}
               />
               
