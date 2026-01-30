@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { Plus, Trash2, Save, X, Edit2, Package, Users, Sparkles, Zap, Database, ChevronRight, Building2, Target, AlertCircle, Wand2, ArrowLeft, Search, ChevronDown, ArrowUpDown } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
+import { Plus, Trash2, Save, X, Edit2, Package, Users, Sparkles, Zap, Database, ChevronRight, ChevronUp, Building2, Target, AlertCircle, Wand2, ArrowLeft, Search, ChevronDown, ArrowUpDown } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { ImageUploader } from './ImageUploader';
 
@@ -144,6 +144,9 @@ export function KnowledgeBaseEditor({ defaultTab, onTabChange, onBack }: Knowled
   const [searchQuery, setSearchQuery] = useState('');
   const [filterDepartment, setFilterDepartment] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<'name' | 'name-desc' | 'links'>('name');
+  
+  // Accordion state for grouped items
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
 
   // All Intent Types for assignment in edit form
   const [allDepartments, setAllDepartments] = useState<IntentType[]>([]);
@@ -696,6 +699,35 @@ export function KnowledgeBaseEditor({ defaultTab, onTabChange, onBack }: Knowled
       }
     });
 
+  // Group items by name for accordion view
+  const groupedItems = useMemo(() => {
+    const groups: Record<string, ContentItem[]> = {};
+    filteredItems.forEach(item => {
+      if (!groups[item.name]) groups[item.name] = [];
+      groups[item.name].push(item);
+    });
+    return Object.entries(groups).map(([name, groupItems]) => ({
+      name,
+      items: groupItems,
+      hasVariations: groupItems.length > 1,
+      // Get first item's icon for the group header
+      firstItem: groupItems[0]
+    }));
+  }, [filteredItems]);
+
+  // Toggle accordion group expansion
+  const toggleGroup = (groupName: string) => {
+    setExpandedGroups(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(groupName)) {
+        newSet.delete(groupName);
+      } else {
+        newSet.add(groupName);
+      }
+      return newSet;
+    });
+  };
+
   return (
     <div>
       {/* Back Button */}
@@ -1155,112 +1187,249 @@ export function KnowledgeBaseEditor({ defaultTab, onTabChange, onBack }: Knowled
             </button>
           </div>
         ) : (
-          <div className="space-y-3">
-            {filteredItems.map((item) => (
-              <div
-                key={item.id}
-                className="flex items-center gap-4 bg-gray-800 rounded-xl p-4 border border-gray-700 hover:border-gray-600 transition-colors"
-              >
-                {/* Icon */}
-                <div 
-                  className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden"
-                  style={{ backgroundColor: `${currentTab.color}20` }}
-                >
-                  {(() => {
-                    const productIcon = getProductIcon(item.name);
-                    const tabDefaultIcon = getTabDefaultIcon(activeTab);
-                    // Priority for Products: 1) Product icon by name, 2) DB image, 3) Lucide fallback
-                    // Priority for other tabs: 1) Tab default icon, 2) DB image, 3) Lucide fallback
-                    if (activeTab === 'products' && productIcon) {
-                      return <img src={productIcon} alt="" className="w-10 h-10 object-contain" />;
-                    } else if (tabDefaultIcon) {
-                      return <img src={tabDefaultIcon} alt="" className="w-10 h-10 object-contain" />;
-                    } else if (item.image) {
-                      return <img src={item.image} alt="" className="w-10 h-10 object-contain" />;
-                    } else {
-                      return <currentTab.icon className="w-6 h-6" style={{ color: currentTab.color }} />;
-                    }
-                  })()}
-                </div>
+          <div className="space-y-2">
+            {groupedItems.map((group) => {
+              const isExpanded = expandedGroups.has(group.name);
+              const firstItem = group.firstItem;
+              
+              // For single items, render normally
+              if (!group.hasVariations) {
+                const item = firstItem;
+                return (
+                  <div
+                    key={item.id}
+                    className="flex items-center gap-4 bg-gray-800 rounded-xl p-4 border border-gray-700 hover:border-gray-600 transition-colors"
+                  >
+                    {/* Icon */}
+                    <div 
+                      className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden"
+                      style={{ backgroundColor: `${currentTab.color}20` }}
+                    >
+                      {(() => {
+                        const productIcon = getProductIcon(item.name);
+                        const tabDefaultIcon = getTabDefaultIcon(activeTab);
+                        if (activeTab === 'products' && productIcon) {
+                          return <img src={productIcon} alt="" className="w-10 h-10 object-contain" />;
+                        } else if (tabDefaultIcon) {
+                          return <img src={tabDefaultIcon} alt="" className="w-10 h-10 object-contain" />;
+                        } else if (item.image) {
+                          return <img src={item.image} alt="" className="w-10 h-10 object-contain" />;
+                        } else {
+                          return <currentTab.icon className="w-6 h-6" style={{ color: currentTab.color }} />;
+                        }
+                      })()}
+                    </div>
 
-                {/* Content */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <h4 className="text-white font-medium truncate">{item.name}</h4>
+                    {/* Content */}
+                    <div className="flex-1 min-w-0">
+                      <h4 className="text-white font-medium truncate">{item.name}</h4>
+                      <p className="text-gray-400 text-sm truncate">{item.description}</p>
+                      
+                      {/* Link badges */}
+                      {itemLinkDetails[item.id] && (
+                        <div className="flex flex-wrap items-center gap-1.5 mt-2">
+                          {itemLinkDetails[item.id].departmentNames.length > 0 && (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-indigo-500/20 text-indigo-300 rounded-md text-xs">
+                              <Building2 className="w-3 h-3 flex-shrink-0" />
+                              {itemLinkDetails[item.id].departmentNames.slice(0, 2).join(', ')}
+                              {itemLinkDetails[item.id].departmentNames.length > 2 && (
+                                <span className="text-indigo-400">+{itemLinkDetails[item.id].departmentNames.length - 2}</span>
+                              )}
+                            </span>
+                          )}
+                          {itemLinkDetails[item.id].outcomeNames.length > 0 && (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-green-500/20 text-green-300 rounded-md text-xs">
+                              <Target className="w-3 h-3 flex-shrink-0" />
+                              {itemLinkDetails[item.id].outcomeNames.slice(0, 2).join(', ')}
+                              {itemLinkDetails[item.id].outcomeNames.length > 2 && (
+                                <span className="text-green-400">+{itemLinkDetails[item.id].outcomeNames.length - 2}</span>
+                              )}
+                            </span>
+                          )}
+                          {itemLinkDetails[item.id].painPointNames.length > 0 && (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-500/20 text-amber-300 rounded-md text-xs">
+                              <AlertCircle className="w-3 h-3 flex-shrink-0" />
+                              {itemLinkDetails[item.id].painPointNames.slice(0, 2).join(', ')}
+                              {itemLinkDetails[item.id].painPointNames.length > 2 && (
+                                <span className="text-amber-400">+{itemLinkDetails[item.id].painPointNames.length - 2}</span>
+                              )}
+                            </span>
+                          )}
+                          {itemLinkDetails[item.id].aiTransformationNames.length > 0 && (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-purple-500/20 text-purple-300 rounded-md text-xs">
+                              <Wand2 className="w-3 h-3 flex-shrink-0" />
+                              {itemLinkDetails[item.id].aiTransformationNames.slice(0, 2).join(', ')}
+                              {itemLinkDetails[item.id].aiTransformationNames.length > 2 && (
+                                <span className="text-purple-400">+{itemLinkDetails[item.id].aiTransformationNames.length - 2}</span>
+                              )}
+                            </span>
+                          )}
+                          {itemLinkDetails[item.id].departmentNames.length === 0 && 
+                           itemLinkDetails[item.id].outcomeNames.length === 0 && 
+                           itemLinkDetails[item.id].painPointNames.length === 0 && 
+                           itemLinkDetails[item.id].aiTransformationNames.length === 0 && (
+                            <span className="text-xs text-gray-500 italic">Not linked anywhere</span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => startEdit(item)}
+                        className="p-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors"
+                      >
+                        <Edit2 className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(item.id)}
+                        className="p-2 text-gray-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
                   </div>
-                  <p className="text-gray-400 text-sm truncate">{item.description}</p>
-                  
-                  {/* Link badges showing where this item is used */}
-                  {itemLinkDetails[item.id] && (
-                    <div className="flex flex-wrap items-center gap-1.5 mt-2">
-                      {/* Department names */}
-                      {itemLinkDetails[item.id].departmentNames.length > 0 && (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-indigo-500/20 text-indigo-300 rounded-md text-xs">
-                          <Building2 className="w-3 h-3 flex-shrink-0" />
-                          {itemLinkDetails[item.id].departmentNames.slice(0, 2).join(', ')}
-                          {itemLinkDetails[item.id].departmentNames.length > 2 && (
-                            <span className="text-indigo-400">+{itemLinkDetails[item.id].departmentNames.length - 2}</span>
-                          )}
+                );
+              }
+              
+              // For groups with variations, render accordion
+              return (
+                <div key={group.name} className="rounded-xl border border-gray-700 overflow-hidden">
+                  {/* Accordion Header */}
+                  <button
+                    onClick={() => toggleGroup(group.name)}
+                    className="w-full flex items-center gap-4 bg-gray-800 p-4 hover:bg-gray-700/50 transition-colors"
+                  >
+                    {/* Icon */}
+                    <div 
+                      className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden"
+                      style={{ backgroundColor: `${currentTab.color}20` }}
+                    >
+                      {(() => {
+                        const productIcon = getProductIcon(group.name);
+                        const tabDefaultIcon = getTabDefaultIcon(activeTab);
+                        if (activeTab === 'products' && productIcon) {
+                          return <img src={productIcon} alt="" className="w-10 h-10 object-contain" />;
+                        } else if (tabDefaultIcon) {
+                          return <img src={tabDefaultIcon} alt="" className="w-10 h-10 object-contain" />;
+                        } else if (firstItem.image) {
+                          return <img src={firstItem.image} alt="" className="w-10 h-10 object-contain" />;
+                        } else {
+                          return <currentTab.icon className="w-6 h-6" style={{ color: currentTab.color }} />;
+                        }
+                      })()}
+                    </div>
+
+                    {/* Content */}
+                    <div className="flex-1 min-w-0 text-left">
+                      <div className="flex items-center gap-2">
+                        <h4 className="text-white font-medium">{group.name}</h4>
+                        <span className="px-2 py-0.5 bg-gray-700 text-gray-300 rounded-full text-xs">
+                          {group.items.length} variations
                         </span>
+                      </div>
+                      {/* Show all unique departments across variations */}
+                      <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                        {(() => {
+                          const allDepts = new Set<string>();
+                          group.items.forEach(item => {
+                            itemLinkDetails[item.id]?.departmentNames.forEach(d => allDepts.add(d));
+                          });
+                          const deptArray = Array.from(allDepts);
+                          if (deptArray.length > 0) {
+                            return (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-indigo-500/20 text-indigo-300 rounded-md text-xs">
+                                <Building2 className="w-3 h-3 flex-shrink-0" />
+                                {deptArray.slice(0, 3).join(', ')}
+                                {deptArray.length > 3 && (
+                                  <span className="text-indigo-400">+{deptArray.length - 3}</span>
+                                )}
+                              </span>
+                            );
+                          }
+                          return null;
+                        })()}
+                      </div>
+                    </div>
+
+                    {/* Expand/Collapse Icon */}
+                    <div className="p-2">
+                      {isExpanded ? (
+                        <ChevronUp className="w-5 h-5 text-gray-400" />
+                      ) : (
+                        <ChevronDown className="w-5 h-5 text-gray-400" />
                       )}
-                      {/* Outcome names */}
-                      {itemLinkDetails[item.id].outcomeNames.length > 0 && (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-green-500/20 text-green-300 rounded-md text-xs">
-                          <Target className="w-3 h-3 flex-shrink-0" />
-                          {itemLinkDetails[item.id].outcomeNames.slice(0, 2).join(', ')}
-                          {itemLinkDetails[item.id].outcomeNames.length > 2 && (
-                            <span className="text-green-400">+{itemLinkDetails[item.id].outcomeNames.length - 2}</span>
-                          )}
-                        </span>
-                      )}
-                      {/* Pain Point names */}
-                      {itemLinkDetails[item.id].painPointNames.length > 0 && (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-500/20 text-amber-300 rounded-md text-xs">
-                          <AlertCircle className="w-3 h-3 flex-shrink-0" />
-                          {itemLinkDetails[item.id].painPointNames.slice(0, 2).join(', ')}
-                          {itemLinkDetails[item.id].painPointNames.length > 2 && (
-                            <span className="text-amber-400">+{itemLinkDetails[item.id].painPointNames.length - 2}</span>
-                          )}
-                        </span>
-                      )}
-                      {/* AI Transformation names */}
-                      {itemLinkDetails[item.id].aiTransformationNames.length > 0 && (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-purple-500/20 text-purple-300 rounded-md text-xs">
-                          <Wand2 className="w-3 h-3 flex-shrink-0" />
-                          {itemLinkDetails[item.id].aiTransformationNames.slice(0, 2).join(', ')}
-                          {itemLinkDetails[item.id].aiTransformationNames.length > 2 && (
-                            <span className="text-purple-400">+{itemLinkDetails[item.id].aiTransformationNames.length - 2}</span>
-                          )}
-                        </span>
-                      )}
-                      {/* Not linked message */}
-                      {itemLinkDetails[item.id].departmentNames.length === 0 && 
-                       itemLinkDetails[item.id].outcomeNames.length === 0 && 
-                       itemLinkDetails[item.id].painPointNames.length === 0 && 
-                       itemLinkDetails[item.id].aiTransformationNames.length === 0 && (
-                        <span className="text-xs text-gray-500 italic">Not linked anywhere</span>
-                      )}
+                    </div>
+                  </button>
+
+                  {/* Accordion Content - Variations */}
+                  {isExpanded && (
+                    <div className="border-t border-gray-700 bg-gray-900/50">
+                      {group.items.map((item, idx) => (
+                        <div
+                          key={item.id}
+                          className={`flex items-center gap-4 p-4 pl-8 hover:bg-gray-800/50 transition-colors ${
+                            idx !== group.items.length - 1 ? 'border-b border-gray-700/50' : ''
+                          }`}
+                        >
+                          {/* Department Badge as Primary Identifier */}
+                          <div className="w-28 flex-shrink-0">
+                            {itemLinkDetails[item.id]?.departmentNames[0] ? (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-indigo-500/30 text-indigo-200 rounded-lg text-xs font-medium">
+                                <Building2 className="w-3 h-3" />
+                                {itemLinkDetails[item.id].departmentNames[0]}
+                              </span>
+                            ) : (
+                              <span className="text-xs text-gray-500 italic">No dept</span>
+                            )}
+                          </div>
+
+                          {/* Description */}
+                          <div className="flex-1 min-w-0">
+                            <p className="text-gray-300 text-sm truncate">{item.description || 'No description'}</p>
+                            
+                            {/* Other badges */}
+                            <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                              {itemLinkDetails[item.id]?.outcomeNames.length > 0 && (
+                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-green-500/20 text-green-300 rounded text-xs">
+                                  <Target className="w-2.5 h-2.5" />
+                                  {itemLinkDetails[item.id].outcomeNames.slice(0, 1).join(', ')}
+                                  {itemLinkDetails[item.id].outcomeNames.length > 1 && ` +${itemLinkDetails[item.id].outcomeNames.length - 1}`}
+                                </span>
+                              )}
+                              {itemLinkDetails[item.id]?.painPointNames.length > 0 && (
+                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-amber-500/20 text-amber-300 rounded text-xs">
+                                  <AlertCircle className="w-2.5 h-2.5" />
+                                  {itemLinkDetails[item.id].painPointNames.slice(0, 1).join(', ')}
+                                  {itemLinkDetails[item.id].painPointNames.length > 1 && ` +${itemLinkDetails[item.id].painPointNames.length - 1}`}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Actions */}
+                          <div className="flex items-center gap-1">
+                            <button
+                              onClick={() => startEdit(item)}
+                              className="p-1.5 text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors"
+                            >
+                              <Edit2 className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={() => handleDelete(item.id)}
+                              className="p-1.5 text-gray-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   )}
                 </div>
-
-                {/* Actions */}
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => startEdit(item)}
-                    className="p-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors"
-                  >
-                    <Edit2 className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => handleDelete(item.id)}
-                    className="p-2 text-gray-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
