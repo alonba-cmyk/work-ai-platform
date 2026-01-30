@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Plus, Trash2, Save, X, Edit2, Package, Users, Sparkles, Zap, Database, ChevronRight, ChevronUp, Building2, Target, AlertCircle, Wand2, ArrowLeft, Search, ChevronDown, ArrowUpDown } from 'lucide-react';
+import { Plus, Trash2, Save, X, Edit2, Package, Users, Sparkles, Zap, Database, ChevronRight, ChevronUp, Building2, Target, AlertCircle, Wand2, ArrowLeft, Search, ChevronDown, ArrowUpDown, Undo2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { ImageUploader } from './ImageUploader';
 
@@ -189,6 +189,19 @@ export function KnowledgeBaseEditor({ defaultTab, onTabChange, onBack }: Knowled
     pendingIntentAdditions.pain_points.size + pendingIntentAdditions.ai_transformations.size +
     pendingIntentRemovals.departments.size + pendingIntentRemovals.outcomes.size + 
     pendingIntentRemovals.pain_points.size + pendingIntentRemovals.ai_transformations.size;
+
+  // Undo functionality - stores previous state before save
+  const [previousState, setPreviousState] = useState<{
+    item: ContentItem | null;
+    intents: {
+      departments: string[];
+      outcomes: string[];
+      painPoints: string[];
+      aiTransformations: string[];
+    };
+  } | null>(null);
+  const [canUndo, setCanUndo] = useState(false);
+  const [lastSavedItemId, setLastSavedItemId] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -409,6 +422,21 @@ export function KnowledgeBaseEditor({ defaultTab, onTabChange, onBack }: Knowled
   };
 
   const handleUpdate = async (id: string) => {
+    // Store current state before updating (for Undo functionality)
+    const currentItem = items.find(item => item.id === id);
+    if (currentItem) {
+      setPreviousState({
+        item: { ...currentItem },
+        intents: {
+          departments: [...linkedDepts],
+          outcomes: [...linkedOutcomes],
+          painPoints: [...linkedPainPoints],
+          aiTransformations: [...linkedAITrans],
+        }
+      });
+      setLastSavedItemId(id);
+    }
+
     const updateData: Record<string, unknown> = {
       name: formData.name,
       description: formData.description || null,
@@ -437,6 +465,75 @@ export function KnowledgeBaseEditor({ defaultTab, onTabChange, onBack }: Knowled
       }
       await fetchItems();
       resetForm(true); // Skip warning since we just saved
+      setCanUndo(true); // Enable undo after successful save
+    }
+  };
+
+  // Undo last save - restore previous state
+  const handleUndo = async () => {
+    if (!previousState || !lastSavedItemId) return;
+
+    const { item, intents } = previousState;
+    if (!item) return;
+
+    // Restore item data
+    const updateData: Record<string, unknown> = {
+      name: item.name,
+      description: item.description,
+      value: item.value,
+      image: item.image,
+    };
+
+    // Add images array for products only
+    if (activeTab === 'products' && (item as any).images) {
+      updateData.images = (item as any).images;
+    }
+
+    if (item.department_id) {
+      updateData.department_id = item.department_id;
+    }
+
+    const { error } = await supabase
+      .from(currentTab.table)
+      .update(updateData)
+      .eq('id', lastSavedItemId);
+
+    if (!error) {
+      // Restore intent links
+      const contentType = activeTab === 'vibeapps' ? 'vibe_apps' : 
+                          activeTab === 'sidekick' ? 'sidekick_actions' : activeTab;
+
+      const idFieldName = activeTab === 'products' ? 'product_id' :
+                          activeTab === 'agents' ? 'agent_id' :
+                          activeTab === 'vibeapps' ? 'vibe_app_id' : 'sidekick_action_id';
+
+      // Delete all current links and restore previous ones
+      const linkConfigs = [
+        { table: `department_${contentType}`, field: 'department_id', values: intents.departments },
+        { table: `outcome_${contentType}`, field: 'outcome_id', values: intents.outcomes },
+        { table: `pain_point_${contentType}`, field: 'pain_point_id', values: intents.painPoints },
+        { table: `ai_transformation_${contentType}`, field: 'ai_transformation_id', values: intents.aiTransformations },
+      ];
+
+      for (const config of linkConfigs) {
+        // Delete current links
+        await supabase
+          .from(config.table)
+          .delete()
+          .eq(idFieldName, lastSavedItemId);
+
+        // Insert previous links
+        for (const intentId of config.values) {
+          await supabase
+            .from(config.table)
+            .insert({ [idFieldName]: lastSavedItemId, [config.field]: intentId });
+        }
+      }
+
+      await fetchItems();
+      setCanUndo(false);
+      setPreviousState(null);
+      setLastSavedItemId(null);
     }
   };
 
@@ -930,6 +1027,33 @@ export function KnowledgeBaseEditor({ defaultTab, onTabChange, onBack }: Knowled
             Add {currentTab.label.slice(0, -1)}
           </button>
         </div>
+
+        {/* Undo Bar - appears after save */}
+        {canUndo && previousState && (
+          <div className="mb-4 p-3 bg-amber-900/30 border border-amber-600/50 rounded-lg flex items-center justify-between animate-fade-in">
+            <div className="flex items-center gap-2 text-amber-200">
+              <Undo2 className="w-4 h-4" />
+              <span className="text-sm">
+                Changes saved to "{previousState.item?.name}". Want to undo?
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleUndo}
+                className="px-3 py-1.5 bg-amber-600 hover:bg-amber-500 text-white text-sm font-medium rounded-lg transition-colors flex items-center gap-1.5"
+              >
+                <Undo2 className="w-3.5 h-3.5" />
+                Undo
+              </button>
+              <button
+                onClick={() => { setCanUndo(false); setPreviousState(null); }}
+                className="px-3 py-1.5 bg-gray-700 hover:bg-gray-600 text-gray-300 text-sm rounded-lg transition-colors"
+              >
+                Dismiss
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Search and Filter Bar */}
         <div className="flex items-center gap-3 mb-6">
