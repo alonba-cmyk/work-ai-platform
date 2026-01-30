@@ -14,6 +14,7 @@ export function useDepartments() {
       const { data, error } = await supabase
         .from('departments')
         .select('*')
+        .eq('is_active', true)  // Only show active departments on main site
         .order('order_index');
       
       if (error) throw error;
@@ -61,10 +62,10 @@ export function useDepartmentData(departmentId: string | null) {
       setLoading(true);
       
       const [productsRes, agentsRes, vibeAppsRes, sidekickRes] = await Promise.all([
-        supabase.from('products').select('*').eq('department_id', departmentId).order('order_index'),
-        supabase.from('agents').select('*').eq('department_id', departmentId).order('order_index'),
-        supabase.from('vibe_apps').select('*').eq('department_id', departmentId).order('order_index'),
-        supabase.from('sidekick_actions').select('*').eq('department_id', departmentId).order('order_index'),
+        supabase.from('products').select('*').eq('department_id', departmentId).eq('is_active', true).order('order_index'),
+        supabase.from('agents').select('*').eq('department_id', departmentId).eq('is_active', true).order('order_index'),
+        supabase.from('vibe_apps').select('*').eq('department_id', departmentId).eq('is_active', true).order('order_index'),
+        supabase.from('sidekick_actions').select('*').eq('department_id', departmentId).eq('is_active', true).order('order_index'),
       ]);
 
       if (productsRes.error) throw productsRes.error;
