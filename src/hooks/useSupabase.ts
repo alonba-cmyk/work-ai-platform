@@ -61,11 +61,28 @@ export function useDepartmentData(departmentId: string | null) {
     try {
       setLoading(true);
       
+      // Use junction tables to get items linked to this department
       const [productsRes, agentsRes, vibeAppsRes, sidekickRes] = await Promise.all([
-        supabase.from('products').select('*').eq('department_id', departmentId).eq('is_active', true).order('order_index'),
-        supabase.from('agents').select('*').eq('department_id', departmentId).eq('is_active', true).order('order_index'),
-        supabase.from('vibe_apps').select('*').eq('department_id', departmentId).eq('is_active', true).order('order_index'),
-        supabase.from('sidekick_actions').select('*').eq('department_id', departmentId).eq('is_active', true).order('order_index'),
+        // Get products via department_products junction table
+        supabase
+          .from('department_products')
+          .select('products(*)')
+          .eq('department_id', departmentId),
+        // Get agents via department_agents junction table  
+        supabase
+          .from('department_agents')
+          .select('agents(*)')
+          .eq('department_id', departmentId),
+        // Get vibe apps via department_vibe_apps junction table
+        supabase
+          .from('department_vibe_apps')
+          .select('vibe_apps(*)')
+          .eq('department_id', departmentId),
+        // Get sidekick actions via department_sidekick_actions junction table
+        supabase
+          .from('department_sidekick_actions')
+          .select('sidekick_actions(*)')
+          .eq('department_id', departmentId),
       ]);
 
       if (productsRes.error) throw productsRes.error;
@@ -73,10 +90,31 @@ export function useDepartmentData(departmentId: string | null) {
       if (vibeAppsRes.error) throw vibeAppsRes.error;
       if (sidekickRes.error) throw sidekickRes.error;
 
-      setProducts(productsRes.data || []);
-      setAgents(agentsRes.data || []);
-      setVibeApps(vibeAppsRes.data || []);
-      setSidekickActions(sidekickRes.data || []);
+      // Extract the actual items from the junction table response and filter by is_active
+      const productsData = (productsRes.data || [])
+        .map((row: any) => row.products)
+        .filter((p: any) => p && p.is_active)
+        .sort((a: any, b: any) => (a.order_index || 0) - (b.order_index || 0));
+      
+      const agentsData = (agentsRes.data || [])
+        .map((row: any) => row.agents)
+        .filter((a: any) => a && a.is_active)
+        .sort((a: any, b: any) => (a.order_index || 0) - (b.order_index || 0));
+      
+      const vibeAppsData = (vibeAppsRes.data || [])
+        .map((row: any) => row.vibe_apps)
+        .filter((v: any) => v && v.is_active)
+        .sort((a: any, b: any) => (a.order_index || 0) - (b.order_index || 0));
+      
+      const sidekickData = (sidekickRes.data || [])
+        .map((row: any) => row.sidekick_actions)
+        .filter((s: any) => s && s.is_active)
+        .sort((a: any, b: any) => (a.order_index || 0) - (b.order_index || 0));
+
+      setProducts(productsData);
+      setAgents(agentsData);
+      setVibeApps(vibeAppsData);
+      setSidekickActions(sidekickData);
     } catch (err: any) {
       setError(err.message);
     } finally {
