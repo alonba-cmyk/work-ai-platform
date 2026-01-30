@@ -236,7 +236,7 @@ export function AnimatedStoryView({ department, agents = [] }: AnimatedStoryView
   };
 
   return (
-    <div className="w-full" style={{ minWidth: '100%', maxWidth: '100%' }}>
+    <div className="w-full" style={{ width: '100%', position: 'relative' }}>
       {/* Header with narrative */}
       <div className="text-center mb-6">
         <h3 
@@ -313,23 +313,33 @@ export function AnimatedStoryView({ department, agents = [] }: AnimatedStoryView
 
       {/* Main Animation Stage - 100% WIDTH - FIXED */}
       <div
-        className="relative rounded-2xl overflow-hidden p-6 w-full"
+        className="relative rounded-2xl overflow-hidden p-6"
         style={{
           background: 'linear-gradient(135deg, rgba(30, 30, 40, 0.95), rgba(20, 20, 30, 0.98))',
           border: '1px solid rgba(255, 255, 255, 0.1)',
           height: '520px',
-          minWidth: '100%',
-          maxWidth: '100%'
+          width: '100%',
+          boxSizing: 'border-box'
         }}
       >
         {/* Two Column Grid - Fixed 50/50 */}
-        <div className="grid grid-cols-2 gap-6 h-full w-full">
+        <div 
+          style={{ 
+            display: 'grid',
+            gridTemplateColumns: 'calc(50% - 12px) calc(50% - 12px)',
+            gap: '24px',
+            height: '100%',
+            width: '100%'
+          }}
+        >
         {/* Board Background - Left Column (50%) */}
-        <div className="rounded-xl overflow-hidden relative"
+        <div className="rounded-xl relative"
           style={{
             background: 'rgba(0, 0, 0, 0.3)',
             border: '1px solid rgba(255, 255, 255, 0.1)',
-            height: '100%'
+            width: '100%',
+            height: '100%',
+            overflow: 'hidden'
           }}
         >
           {/* Board Header - monday CRM */}
@@ -456,14 +466,14 @@ export function AnimatedStoryView({ department, agents = [] }: AnimatedStoryView
         </div>
 
         {/* Right Column - Dynamic Content (50%) */}
-        <div className="flex flex-col overflow-hidden" style={{ height: '100%' }}>
+        <div className="flex flex-col" style={{ width: '100%', height: '100%', overflow: 'hidden' }}>
           <AnimatePresence mode="wait">
             {/* Step 1: Campaign Ideas - Sidekick suggests campaigns */}
             {currentStep === 0 && (
               <motion.div
                 key="step1"
-                initial={{ opacity: 0, x: 50 }}
-                animate={{ opacity: 1, x: 0 }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
                 exit={{ opacity: 0, x: -50 }}
                 className="h-full flex flex-col"
               >
@@ -603,8 +613,8 @@ export function AnimatedStoryView({ department, agents = [] }: AnimatedStoryView
             {currentStep === 1 && (
               <motion.div
                 key="step2"
-                initial={{ opacity: 0, x: 50 }}
-                animate={{ opacity: 1, x: 0 }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
                 exit={{ opacity: 0, x: -50 }}
                 className="h-full flex flex-col"
               >
@@ -688,8 +698,8 @@ export function AnimatedStoryView({ department, agents = [] }: AnimatedStoryView
             {currentStep === 2 && (
               <motion.div
                 key="step3"
-                initial={{ opacity: 0, x: 50 }}
-                animate={{ opacity: 1, x: 0 }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
                 exit={{ opacity: 0, x: -50 }}
                 className="h-full flex flex-col"
               >
@@ -765,8 +775,8 @@ export function AnimatedStoryView({ department, agents = [] }: AnimatedStoryView
             {currentStep === 3 && (
               <motion.div
                 key="step4"
-                initial={{ opacity: 0, x: 50 }}
-                animate={{ opacity: 1, x: 0 }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
                 exit={{ opacity: 0, x: -50 }}
                 className="h-full flex flex-col"
               >
@@ -845,8 +855,8 @@ export function AnimatedStoryView({ department, agents = [] }: AnimatedStoryView
             {currentStep === 4 && (
               <motion.div
                 key="step5"
-                initial={{ opacity: 0, x: 50 }}
-                animate={{ opacity: 1, x: 0 }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
                 exit={{ opacity: 0, x: -50 }}
                 className="h-full flex flex-col"
               >
@@ -961,8 +971,8 @@ export function AnimatedStoryView({ department, agents = [] }: AnimatedStoryView
             {currentStep === 5 && (
               <motion.div
                 key="step6"
-                initial={{ opacity: 0, x: 50 }}
-                animate={{ opacity: 1, x: 0 }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
                 exit={{ opacity: 0, x: -50 }}
                 className="h-full flex flex-col"
               >
@@ -1164,8 +1174,8 @@ export function AnimatedStoryView({ department, agents = [] }: AnimatedStoryView
             {currentStep === 6 && (
               <motion.div
                 key="step7"
-                initial={{ opacity: 0, x: 50 }}
-                animate={{ opacity: 1, x: 0 }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
                 exit={{ opacity: 0, x: -50 }}
                 className="h-full flex flex-col"
               >
