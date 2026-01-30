@@ -236,7 +236,7 @@ export function AnimatedStoryView({ department, agents = [] }: AnimatedStoryView
   };
 
   return (
-    <div className="w-full" style={{ width: '100%', position: 'relative' }}>
+    <div style={{ width: '100%', minWidth: '100%', position: 'relative' }}>
       {/* Header with narrative */}
       <div className="text-center mb-6">
         <h3 
