@@ -988,13 +988,15 @@ export function IsometricPlatformVisualization({
         </motion.div>
         
         <div 
-          className="w-full max-w-[1100px] rounded-[var(--radius-card)] border backdrop-blur-xl relative p-4 md:p-6 xl:p-8"
+          className={`w-full rounded-[var(--radius-card)] border backdrop-blur-xl relative p-4 md:p-6 xl:p-8 ${
+            viewMode === 'overview' ? 'max-w-[1100px]' : ''
+          }`}
           style={{
             background: 'rgba(255, 255, 255, 0.04)',
             borderColor: 'rgba(255, 255, 255, 0.25)',
             boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
             width: '100%',
-            minWidth: 'min(1100px, 100%)',
+            minWidth: viewMode === 'overview' ? 'min(1100px, 100%)' : '100%',
           }}
         >
           {/* Animated glow effect - subtle */}
