@@ -644,9 +644,19 @@ export function NavigationItemsEditor({ type, title, icon, onNavigateToKnowledge
               <div>
                 {/* Linked items first - single column (full width) */}
                 {(() => {
-                  const linkedItems = currentContent.items
-                    .filter(item => isItemLinked(currentContent.type, item.id))
-                    .sort((a, b) => a.name.localeCompare(b.name));
+                  // Deduplicate by name - keep first occurrence
+                  const uniqueByName = (items: ContentItem[]) => {
+                    const seen = new Set<string>();
+                    return items.filter(item => {
+                      if (seen.has(item.name)) return false;
+                      seen.add(item.name);
+                      return true;
+                    });
+                  };
+                  
+                  const linkedItems = uniqueByName(
+                    currentContent.items.filter(item => isItemLinked(currentContent.type, item.id))
+                  ).sort((a, b) => a.name.localeCompare(b.name));
                   
                   if (linkedItems.length === 0) return null;
                   
@@ -695,9 +705,26 @@ export function NavigationItemsEditor({ type, title, icon, onNavigateToKnowledge
 
                 {/* Unlinked items - two column grid */}
                 {(() => {
-                  const unlinkedItems = currentContent.items
-                    .filter(item => !isItemLinked(currentContent.type, item.id))
-                    .sort((a, b) => a.name.localeCompare(b.name));
+                  // Deduplicate by name - keep first occurrence
+                  const uniqueByName = (items: ContentItem[]) => {
+                    const seen = new Set<string>();
+                    return items.filter(item => {
+                      if (seen.has(item.name)) return false;
+                      seen.add(item.name);
+                      return true;
+                    });
+                  };
+                  
+                  // Get names that are already linked (to exclude from unlinked)
+                  const linkedNames = new Set(
+                    currentContent.items
+                      .filter(item => isItemLinked(currentContent.type, item.id))
+                      .map(item => item.name)
+                  );
+                  
+                  const unlinkedItems = uniqueByName(
+                    currentContent.items.filter(item => !isItemLinked(currentContent.type, item.id) && !linkedNames.has(item.name))
+                  ).sort((a, b) => a.name.localeCompare(b.name));
                   
                   if (unlinkedItems.length === 0) return null;
                   
