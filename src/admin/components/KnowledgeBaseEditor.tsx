@@ -354,8 +354,10 @@ export function KnowledgeBaseEditor({ defaultTab, onTabChange, onBack }: Knowled
 
   // Handle modal close with unsaved changes check
   const handleCloseModal = () => {
-    if (hasUnsavedIntentChanges && !confirm('You have unsaved changes. Discard?')) {
-      return;
+    if (hasUnsavedIntentChanges) {
+      if (!confirm('יש לך שינויים שלא נשמרו. לסגור בלי לשמור?')) {
+        return;
+      }
     }
     resetForm(true);
   };
@@ -414,9 +416,50 @@ export function KnowledgeBaseEditor({ defaultTab, onTabChange, onBack }: Knowled
       .eq('id', id);
 
     if (!error) {
+      // Also save any pending intent type assignments
+      if (hasUnsavedIntentChanges) {
+        await saveIntentLinksInternal(id);
+      }
       await fetchItems();
-      resetForm();
+      resetForm(true); // Skip warning since we just saved
     }
+  };
+
+  // Internal function to save intent links (used by both handleUpdate and handleSaveIntentLinks)
+  const saveIntentLinksInternal = async (itemId: string) => {
+    const contentType = activeTab === 'vibeapps' ? 'vibe_apps' : 
+                        activeTab === 'sidekick' ? 'sidekick_actions' : activeTab;
+
+    const idFieldName = activeTab === 'products' ? 'product_id' :
+                        activeTab === 'agents' ? 'agent_id' :
+                        activeTab === 'vibeapps' ? 'vibe_app_id' : 'sidekick_action_id';
+
+    const intentTypes = ['departments', 'outcomes', 'pain_points', 'ai_transformations'] as const;
+
+    for (const intentType of intentTypes) {
+      const tableName = `${intentType.replace('_', '_').replace('departments', 'department').replace('outcomes', 'outcome').replace('pain_points', 'pain_point').replace('ai_transformations', 'ai_transformation')}_${contentType}`;
+      const intentIdField = intentType === 'departments' ? 'department_id' :
+                            intentType === 'outcomes' ? 'outcome_id' :
+                            intentType === 'pain_points' ? 'pain_point_id' : 'ai_transformation_id';
+
+      // Handle additions
+      for (const intentId of pendingIntentAdditions[intentType]) {
+        await supabase.from(tableName).upsert({
+          [idFieldName]: itemId,
+          [intentIdField]: intentId
+        });
+      }
+
+      // Handle removals
+      for (const intentId of pendingIntentRemovals[intentType]) {
+        await supabase.from(tableName)
+          .delete()
+          .eq(idFieldName, itemId)
+          .eq(intentIdField, intentId);
+      }
+    }
+
+    resetPendingIntentChanges();
   };
 
   const handleDelete = async (id: string) => {
@@ -1041,43 +1084,14 @@ export function KnowledgeBaseEditor({ defaultTab, onTabChange, onBack }: Knowled
                   </div>
                 </div>
 
-                {/* Save/Discard Intent Changes */}
+                {/* Pending changes indicator - will be saved with main Save button */}
                 {hasUnsavedIntentChanges && (
-                  <div className="mt-4 p-4 bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/30 rounded-xl">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 bg-amber-400 rounded-full animate-pulse" />
-                        <p className="text-sm text-amber-300 font-medium">
-                          {pendingIntentChangesCount} unsaved change{pendingIntentChangesCount !== 1 ? 's' : ''}
-                        </p>
-                      </div>
-                      <div className="flex gap-3">
-                        <button
-                          type="button"
-                          onClick={() => handleDiscardIntentChanges()}
-                          className="px-3 py-1.5 bg-gray-600 hover:bg-gray-500 text-gray-300 rounded-lg text-sm transition-colors"
-                        >
-                          Discard
-                        </button>
-                        <button
-                          type="button"
-                          onClick={handleSaveIntentLinks}
-                          disabled={isSavingIntents}
-                          className="flex items-center gap-2 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-800 disabled:cursor-not-allowed text-white rounded-lg text-sm transition-colors"
-                        >
-                          {isSavingIntents ? (
-                            <>
-                              <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                              Saving...
-                            </>
-                          ) : (
-                            <>
-                              <Save className="w-3 h-3" />
-                              Save Assignments
-                            </>
-                          )}
-                        </button>
-                      </div>
+                  <div className="mt-4 p-3 bg-indigo-500/10 border border-indigo-500/30 rounded-xl">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 bg-indigo-400 rounded-full animate-pulse" />
+                      <p className="text-sm text-indigo-300">
+                        {pendingIntentChangesCount} assignment change{pendingIntentChangesCount !== 1 ? 's' : ''} pending - click "Save Changes" below to save
+                      </p>
                     </div>
                   </div>
                 )}
