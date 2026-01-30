@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Trash2, Save, X, Edit2, Package, Users, Sparkles, Zap, Database, ChevronRight, Building2, Target, AlertCircle, Wand2, ArrowLeft } from 'lucide-react';
+import { Plus, Trash2, Save, X, Edit2, Package, Users, Sparkles, Zap, Database, ChevronRight, Building2, Target, AlertCircle, Wand2, ArrowLeft, Search, ChevronDown, ArrowUpDown } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { ImageUploader } from './ImageUploader';
 
@@ -65,12 +65,20 @@ interface IntentType {
   avatar_color?: string;
 }
 
-// Tracks where each item is linked
+// Tracks where each item is linked (counts)
 interface ItemLinks {
   departments: number;
   outcomes: number;
   painPoints: number;
   aiTransformations: number;
+}
+
+// Tracks actual linked names for display
+interface ItemLinkDetails {
+  departmentNames: string[];
+  outcomeNames: string[];
+  painPointNames: string[];
+  aiTransformationNames: string[];
 }
 
 const tabs = [
@@ -128,6 +136,14 @@ export function KnowledgeBaseEditor({ defaultTab, onTabChange, onBack }: Knowled
   
   // Link counts per item (shows where each item is used)
   const [itemLinks, setItemLinks] = useState<Record<string, ItemLinks>>({});
+  
+  // Actual linked names for display
+  const [itemLinkDetails, setItemLinkDetails] = useState<Record<string, ItemLinkDetails>>({});
+  
+  // Search and filter state
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterDepartment, setFilterDepartment] = useState<string | null>(null);
+  const [sortBy, setSortBy] = useState<'name' | 'name-desc' | 'links'>('name');
 
   // All Intent Types for assignment in edit form
   const [allDepartments, setAllDepartments] = useState<IntentType[]>([]);
@@ -237,6 +253,7 @@ export function KnowledgeBaseEditor({ defaultTab, onTabChange, onBack }: Knowled
   const fetchItemLinks = async (itemIds: string[]) => {
     if (itemIds.length === 0) {
       setItemLinks({});
+      setItemLinkDetails({});
       return;
     }
 
@@ -247,52 +264,73 @@ export function KnowledgeBaseEditor({ defaultTab, onTabChange, onBack }: Knowled
     const contentType = activeTab === 'vibeapps' ? 'vibe_apps' : 
                         activeTab === 'sidekick' ? 'sidekick_actions' : activeTab;
 
-    // Fetch from all junction tables in parallel
+    // Fetch from all junction tables with names in parallel
     const [deptLinks, outcomeLinks, painPointLinks, aiTransLinks] = await Promise.all([
-      supabase.from(`department_${contentType}`).select(idFieldName),
-      supabase.from(`outcome_${contentType}`).select(idFieldName),
-      supabase.from(`pain_point_${contentType}`).select(idFieldName),
-      supabase.from(`ai_transformation_${contentType}`).select(idFieldName),
+      supabase.from(`department_${contentType}`).select(`${idFieldName}, department_id, departments(title)`),
+      supabase.from(`outcome_${contentType}`).select(`${idFieldName}, outcome_id, outcomes(title)`),
+      supabase.from(`pain_point_${contentType}`).select(`${idFieldName}, pain_point_id, pain_points(title)`),
+      supabase.from(`ai_transformation_${contentType}`).select(`${idFieldName}, ai_transformation_id, ai_transformations(title)`),
     ]);
 
-    // Debug logging
-    console.log('[fetchItemLinks] Content type:', contentType, 'ID field:', idFieldName);
-    console.log('[fetchItemLinks] Department links:', deptLinks.data?.length || 0, 'records', deptLinks.error ? `ERROR: ${deptLinks.error.message}` : '');
-    console.log('[fetchItemLinks] Outcome links:', outcomeLinks.data?.length || 0, 'records', outcomeLinks.error ? `ERROR: ${outcomeLinks.error.message}` : '');
-    console.log('[fetchItemLinks] Pain Point links:', painPointLinks.data?.length || 0, 'records', painPointLinks.error ? `ERROR: ${painPointLinks.error.message}` : '');
-    console.log('[fetchItemLinks] AI Trans links:', aiTransLinks.data?.length || 0, 'records', aiTransLinks.error ? `ERROR: ${aiTransLinks.error.message}` : '');
-
-    // Count links per item
+    // Count links per item and collect names
     const links: Record<string, ItemLinks> = {};
+    const details: Record<string, ItemLinkDetails> = {};
+    
     itemIds.forEach(id => {
       links[id] = { departments: 0, outcomes: 0, painPoints: 0, aiTransformations: 0 };
+      details[id] = { departmentNames: [], outcomeNames: [], painPointNames: [], aiTransformationNames: [] };
     });
 
-    // Count department links
+    // Process department links
     (deptLinks.data || []).forEach((link: any) => {
       const itemId = link[idFieldName];
-      if (links[itemId]) links[itemId].departments++;
+      if (links[itemId]) {
+        links[itemId].departments++;
+        const name = link.departments?.title;
+        if (name && !details[itemId].departmentNames.includes(name)) {
+          details[itemId].departmentNames.push(name);
+        }
+      }
     });
 
-    // Count outcome links
+    // Process outcome links
     (outcomeLinks.data || []).forEach((link: any) => {
       const itemId = link[idFieldName];
-      if (links[itemId]) links[itemId].outcomes++;
+      if (links[itemId]) {
+        links[itemId].outcomes++;
+        const name = link.outcomes?.title;
+        if (name && !details[itemId].outcomeNames.includes(name)) {
+          details[itemId].outcomeNames.push(name);
+        }
+      }
     });
 
-    // Count pain point links
+    // Process pain point links
     (painPointLinks.data || []).forEach((link: any) => {
       const itemId = link[idFieldName];
-      if (links[itemId]) links[itemId].painPoints++;
+      if (links[itemId]) {
+        links[itemId].painPoints++;
+        const name = link.pain_points?.title;
+        if (name && !details[itemId].painPointNames.includes(name)) {
+          details[itemId].painPointNames.push(name);
+        }
+      }
     });
 
-    // Count AI transformation links
+    // Process AI transformation links
     (aiTransLinks.data || []).forEach((link: any) => {
       const itemId = link[idFieldName];
-      if (links[itemId]) links[itemId].aiTransformations++;
+      if (links[itemId]) {
+        links[itemId].aiTransformations++;
+        const name = link.ai_transformations?.title;
+        if (name && !details[itemId].aiTransformationNames.includes(name)) {
+          details[itemId].aiTransformationNames.push(name);
+        }
+      }
     });
 
     setItemLinks(links);
+    setItemLinkDetails(details);
   };
 
   const resetForm = (skipWarning = false) => {
@@ -581,6 +619,40 @@ export function KnowledgeBaseEditor({ defaultTab, onTabChange, onBack }: Knowled
     return true;
   };
 
+  // Filter and sort items
+  const filteredItems = items
+    .filter(item => {
+      // Search filter
+      if (searchQuery) {
+        const query = searchQuery.toLowerCase();
+        const matchesName = item.name.toLowerCase().includes(query);
+        const matchesDesc = item.description?.toLowerCase().includes(query);
+        if (!matchesName && !matchesDesc) return false;
+      }
+      // Department filter
+      if (filterDepartment) {
+        const deptNames = itemLinkDetails[item.id]?.departmentNames || [];
+        if (!deptNames.includes(filterDepartment)) return false;
+      }
+      return true;
+    })
+    .sort((a, b) => {
+      switch (sortBy) {
+        case 'name':
+          return a.name.localeCompare(b.name);
+        case 'name-desc':
+          return b.name.localeCompare(a.name);
+        case 'links':
+          const aLinks = (itemLinks[a.id]?.departments || 0) + (itemLinks[a.id]?.outcomes || 0) + 
+                         (itemLinks[a.id]?.painPoints || 0) + (itemLinks[a.id]?.aiTransformations || 0);
+          const bLinks = (itemLinks[b.id]?.departments || 0) + (itemLinks[b.id]?.outcomes || 0) + 
+                         (itemLinks[b.id]?.painPoints || 0) + (itemLinks[b.id]?.aiTransformations || 0);
+          return bLinks - aLinks;
+        default:
+          return 0;
+      }
+    });
+
   return (
     <div>
       {/* Back Button */}
@@ -651,6 +723,58 @@ export function KnowledgeBaseEditor({ defaultTab, onTabChange, onBack }: Knowled
             <Plus className="w-4 h-4" />
             Add {currentTab.label.slice(0, -1)}
           </button>
+        </div>
+
+        {/* Search and Filter Bar */}
+        <div className="flex items-center gap-3 mb-6">
+          {/* Search */}
+          <div className="relative flex-1 max-w-md">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder={`Search ${currentTab.label.toLowerCase()}...`}
+              className="w-full pl-10 pr-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+
+          {/* Department Filter */}
+          <div className="relative">
+            <select
+              value={filterDepartment || ''}
+              onChange={(e) => setFilterDepartment(e.target.value || null)}
+              className="appearance-none pl-4 pr-10 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all cursor-pointer"
+            >
+              <option value="">All Departments</option>
+              {allDepartments.map(dept => (
+                <option key={dept.id} value={dept.title}>{dept.title}</option>
+              ))}
+            </select>
+            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
+          </div>
+
+          {/* Sort */}
+          <div className="relative">
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as 'name' | 'name-desc' | 'links')}
+              className="appearance-none pl-4 pr-10 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all cursor-pointer"
+            >
+              <option value="name">Name A-Z</option>
+              <option value="name-desc">Name Z-A</option>
+              <option value="links">Most Links</option>
+            </select>
+            <ArrowUpDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
+          </div>
         </div>
 
         {/* Modal Add/Edit Form */}
@@ -989,6 +1113,14 @@ export function KnowledgeBaseEditor({ defaultTab, onTabChange, onBack }: Knowled
         )}
 
         {/* Items List */}
+        {/* Results count when filtering */}
+        {(searchQuery || filterDepartment) && !loading && (
+          <div className="text-sm text-gray-400 mb-4">
+            Showing {filteredItems.length} of {items.length} {currentTab.label.toLowerCase()}
+            {filterDepartment && <span className="text-indigo-400"> in {filterDepartment}</span>}
+          </div>
+        )}
+
         {loading ? (
           <div className="text-center py-12 text-gray-400">Loading...</div>
         ) : items.length === 0 ? (
@@ -997,9 +1129,20 @@ export function KnowledgeBaseEditor({ defaultTab, onTabChange, onBack }: Knowled
             <p className="text-gray-400">No {currentTab.label.toLowerCase()} yet.</p>
             <p className="text-gray-500 text-sm">Add your first one to get started!</p>
           </div>
+        ) : filteredItems.length === 0 ? (
+          <div className="text-center py-12">
+            <Search className="w-12 h-12 mx-auto mb-3 opacity-30 text-gray-600" />
+            <p className="text-gray-400">No matching {currentTab.label.toLowerCase()} found.</p>
+            <button
+              onClick={() => { setSearchQuery(''); setFilterDepartment(null); }}
+              className="mt-2 text-indigo-400 hover:text-indigo-300 text-sm"
+            >
+              Clear filters
+            </button>
+          </div>
         ) : (
           <div className="space-y-3">
-            {items.map((item) => (
+            {filteredItems.map((item) => (
               <div
                 key={item.id}
                 className="flex items-center gap-4 bg-gray-800 rounded-xl p-4 border border-gray-700 hover:border-gray-600 transition-colors"
@@ -1034,36 +1177,53 @@ export function KnowledgeBaseEditor({ defaultTab, onTabChange, onBack }: Knowled
                   <p className="text-gray-400 text-sm truncate">{item.description}</p>
                   
                   {/* Link badges showing where this item is used */}
-                  {itemLinks[item.id] && (
-                    <div className="flex items-center gap-2 mt-2">
-                      {itemLinks[item.id].departments > 0 && (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-indigo-500/20 text-indigo-300 rounded text-xs">
-                          <Building2 className="w-3 h-3" />
-                          {itemLinks[item.id].departments} Dept
+                  {itemLinkDetails[item.id] && (
+                    <div className="flex flex-wrap items-center gap-1.5 mt-2">
+                      {/* Department names */}
+                      {itemLinkDetails[item.id].departmentNames.length > 0 && (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-indigo-500/20 text-indigo-300 rounded-md text-xs">
+                          <Building2 className="w-3 h-3 flex-shrink-0" />
+                          {itemLinkDetails[item.id].departmentNames.slice(0, 2).join(', ')}
+                          {itemLinkDetails[item.id].departmentNames.length > 2 && (
+                            <span className="text-indigo-400">+{itemLinkDetails[item.id].departmentNames.length - 2}</span>
+                          )}
                         </span>
                       )}
-                      {itemLinks[item.id].outcomes > 0 && (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-green-500/20 text-green-300 rounded text-xs">
-                          <Target className="w-3 h-3" />
-                          {itemLinks[item.id].outcomes} Outcome
+                      {/* Outcome names */}
+                      {itemLinkDetails[item.id].outcomeNames.length > 0 && (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-green-500/20 text-green-300 rounded-md text-xs">
+                          <Target className="w-3 h-3 flex-shrink-0" />
+                          {itemLinkDetails[item.id].outcomeNames.slice(0, 2).join(', ')}
+                          {itemLinkDetails[item.id].outcomeNames.length > 2 && (
+                            <span className="text-green-400">+{itemLinkDetails[item.id].outcomeNames.length - 2}</span>
+                          )}
                         </span>
                       )}
-                      {itemLinks[item.id].painPoints > 0 && (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-500/20 text-amber-300 rounded text-xs">
-                          <AlertCircle className="w-3 h-3" />
-                          {itemLinks[item.id].painPoints} Pain
+                      {/* Pain Point names */}
+                      {itemLinkDetails[item.id].painPointNames.length > 0 && (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-500/20 text-amber-300 rounded-md text-xs">
+                          <AlertCircle className="w-3 h-3 flex-shrink-0" />
+                          {itemLinkDetails[item.id].painPointNames.slice(0, 2).join(', ')}
+                          {itemLinkDetails[item.id].painPointNames.length > 2 && (
+                            <span className="text-amber-400">+{itemLinkDetails[item.id].painPointNames.length - 2}</span>
+                          )}
                         </span>
                       )}
-                      {itemLinks[item.id].aiTransformations > 0 && (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-purple-500/20 text-purple-300 rounded text-xs">
-                          <Wand2 className="w-3 h-3" />
-                          {itemLinks[item.id].aiTransformations} AI
+                      {/* AI Transformation names */}
+                      {itemLinkDetails[item.id].aiTransformationNames.length > 0 && (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-purple-500/20 text-purple-300 rounded-md text-xs">
+                          <Wand2 className="w-3 h-3 flex-shrink-0" />
+                          {itemLinkDetails[item.id].aiTransformationNames.slice(0, 2).join(', ')}
+                          {itemLinkDetails[item.id].aiTransformationNames.length > 2 && (
+                            <span className="text-purple-400">+{itemLinkDetails[item.id].aiTransformationNames.length - 2}</span>
+                          )}
                         </span>
                       )}
-                      {itemLinks[item.id].departments === 0 && 
-                       itemLinks[item.id].outcomes === 0 && 
-                       itemLinks[item.id].painPoints === 0 && 
-                       itemLinks[item.id].aiTransformations === 0 && (
+                      {/* Not linked message */}
+                      {itemLinkDetails[item.id].departmentNames.length === 0 && 
+                       itemLinkDetails[item.id].outcomeNames.length === 0 && 
+                       itemLinkDetails[item.id].painPointNames.length === 0 && 
+                       itemLinkDetails[item.id].aiTransformationNames.length === 0 && (
                         <span className="text-xs text-gray-500 italic">Not linked anywhere</span>
                       )}
                     </div>
