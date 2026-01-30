@@ -425,7 +425,7 @@ export function AnimatedStoryView({ department, agents = [] }: AnimatedStoryView
                 initial={{ opacity: 0, x: 50 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -50 }}
-                className="h-full flex flex-col"
+                className="h-full flex flex-col min-h-[460px]"
               >
                 <div 
                   className="flex-1 rounded-xl p-4 flex flex-col"
@@ -517,7 +517,7 @@ export function AnimatedStoryView({ department, agents = [] }: AnimatedStoryView
                 initial={{ opacity: 0, x: 50 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -50 }}
-                className="h-full flex flex-col"
+                className="h-full flex flex-col min-h-[460px]"
               >
                 <div 
                   className="flex-1 rounded-xl p-4 flex flex-col"
@@ -599,14 +599,14 @@ export function AnimatedStoryView({ department, agents = [] }: AnimatedStoryView
               </motion.div>
             )}
 
-            {/* Step 3: Agent Calling - NOW WITH CALL WINDOW */}
+            {/* Step 3: Agent Calling - WITH VISUAL CALL DISPLAY */}
             {currentStep === 2 && (
               <motion.div
                 key="step3"
                 initial={{ opacity: 0, x: 50 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -50 }}
-                className="h-full flex flex-col"
+                className="h-full flex flex-col min-h-[460px]"
               >
                 <div 
                   className="flex-1 rounded-xl p-4 flex flex-col"
@@ -638,8 +638,82 @@ export function AnimatedStoryView({ department, agents = [] }: AnimatedStoryView
                     </div>
                   </div>
 
+                  {/* Visual Call Display - Agent and Customer Face to Face */}
+                  <div className="flex items-center justify-center gap-4 py-6 mb-4">
+                    {/* Agent Side */}
+                    <motion.div 
+                      initial={{ x: -20, opacity: 0 }}
+                      animate={{ x: 0, opacity: 1 }}
+                      className="text-center"
+                    >
+                      <motion.div 
+                        animate={{ scale: [1, 1.05, 1] }}
+                        transition={{ repeat: Infinity, duration: 2 }}
+                        className="w-20 h-20 rounded-full overflow-hidden border-4 border-indigo-500 mx-auto mb-2"
+                        style={{ boxShadow: '0 0 20px rgba(99, 102, 241, 0.5)' }}
+                      >
+                        {featuredAgent?.image ? (
+                          <img 
+                            src={featuredAgent.image} 
+                            alt={featuredAgent.name}
+                            className="w-full h-full object-cover"
+                            style={{ transform: 'scale(1.3)' }}
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
+                            <Users className="w-8 h-8 text-white" />
+                          </div>
+                        )}
+                      </motion.div>
+                      <p className="text-white text-sm font-medium">{featuredAgent?.name || 'RSVP Agent'}</p>
+                      <p className="text-indigo-400 text-xs">AI Agent</p>
+                    </motion.div>
+
+                    {/* Connecting Line with Phone */}
+                    <div className="flex items-center gap-2">
+                      <motion.div 
+                        className="w-12 h-1 rounded-full"
+                        style={{ background: 'linear-gradient(to right, #6366f1, #22c55e)' }}
+                        animate={{ opacity: [0.5, 1, 0.5] }}
+                        transition={{ repeat: Infinity, duration: 1.5 }}
+                      />
+                      <motion.div
+                        animate={{ rotate: [0, -10, 10, -10, 0], scale: [1, 1.1, 1] }}
+                        transition={{ repeat: Infinity, duration: 0.8 }}
+                        className="w-12 h-12 rounded-full bg-green-500 flex items-center justify-center"
+                        style={{ boxShadow: '0 0 25px rgba(34, 197, 94, 0.6)' }}
+                      >
+                        <Phone className="w-6 h-6 text-white" />
+                      </motion.div>
+                      <motion.div 
+                        className="w-12 h-1 rounded-full"
+                        style={{ background: 'linear-gradient(to right, #22c55e, #ec4899)' }}
+                        animate={{ opacity: [0.5, 1, 0.5] }}
+                        transition={{ repeat: Infinity, duration: 1.5, delay: 0.3 }}
+                      />
+                    </div>
+
+                    {/* Customer Side */}
+                    <motion.div 
+                      initial={{ x: 20, opacity: 0 }}
+                      animate={{ x: 0, opacity: 1 }}
+                      className="text-center"
+                    >
+                      <motion.div 
+                        animate={{ scale: [1, 1.05, 1] }}
+                        transition={{ repeat: Infinity, duration: 2, delay: 0.5 }}
+                        className="w-20 h-20 rounded-full overflow-hidden border-4 border-pink-500 mx-auto mb-2 bg-gradient-to-br from-pink-400 to-rose-500 flex items-center justify-center"
+                        style={{ boxShadow: '0 0 20px rgba(236, 72, 153, 0.5)' }}
+                      >
+                        <span className="text-white text-2xl font-bold">SJ</span>
+                      </motion.div>
+                      <p className="text-white text-sm font-medium">Sarah Johnson</p>
+                      <p className="text-pink-400 text-xs">Customer</p>
+                    </motion.div>
+                  </div>
+
                   {/* Call Conversation */}
-                  <div className="flex-1 space-y-4 overflow-y-auto">
+                  <div className="flex-1 space-y-3 overflow-y-auto">
                     {/* Agent Message */}
                     <motion.div
                       initial={{ opacity: 0, y: 10 }}
@@ -658,8 +732,7 @@ export function AnimatedStoryView({ department, agents = [] }: AnimatedStoryView
                           <Users className="w-4 h-4 text-white" />
                         )}
                       </div>
-                      <div className="bg-indigo-600/30 rounded-2xl rounded-tl-md px-4 py-3 max-w-[85%]">
-                        <p className="text-xs text-indigo-300 mb-1 font-medium">{featuredAgent?.name || 'RSVP Agent'}</p>
+                      <div className="bg-indigo-600/30 rounded-2xl rounded-tl-md px-4 py-2 max-w-[80%]">
                         <p className="text-white text-sm">
                           {agentCallMessage.slice(0, agentMessageIndex)}
                           {agentMessageIndex < agentCallMessage.length && (
@@ -677,8 +750,7 @@ export function AnimatedStoryView({ department, agents = [] }: AnimatedStoryView
                           animate={{ opacity: 1, y: 0 }}
                           className="flex gap-3 justify-end"
                         >
-                          <div className="bg-white/10 rounded-2xl rounded-tr-md px-4 py-3 max-w-[85%]">
-                            <p className="text-xs text-white/50 mb-1 font-medium">Sarah Johnson</p>
+                          <div className="bg-pink-500/20 rounded-2xl rounded-tr-md px-4 py-2 max-w-[80%]">
                             <p className="text-white text-sm">
                               Yes, absolutely! I've been looking forward to it. Count me in! 🎉
                             </p>
@@ -737,7 +809,7 @@ export function AnimatedStoryView({ department, agents = [] }: AnimatedStoryView
                 initial={{ opacity: 0, x: 50 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -50 }}
-                className="h-full flex flex-col"
+                className="h-full flex flex-col min-h-[460px]"
               >
                 <div 
                   className="flex-1 rounded-xl p-6 flex flex-col items-center justify-center"
