@@ -265,7 +265,6 @@ export function AnimatedStoryView({ department, agents = [] }: AnimatedStoryView
 
       {/* Current Step Title */}
       <div className="text-center mb-4">
-      >
         <span className="text-indigo-400 text-sm font-medium">
           Step {currentStep + 1}: {storySteps[currentStep]?.title}
         </span>
