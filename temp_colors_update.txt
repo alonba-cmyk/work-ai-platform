@@ -1,0 +1,48 @@
+# צבעים לכל חברה (ללא monday.com Marketing):
+
+Marketing Work Management:
+- Asana: #f06a6a (אדום)
+- CoSchedule: #e07c5f (כתום)
+
+Marketing CRM & Campaigns:
+- HubSpot Marketing Hub: #FF7A59 (כתום HubSpot)
+- Marketo: #5C4C9F (סגול)
+- Pardot: #009EDB (כחול)
+
+Sales CRM:
+- Salesforce: #00A1E0 (כחול)
+- Pipedrive: #1B5E20 (ירוק)
+- Close: #2C7BE5 (כחול)
+
+Operations:
+- Asana: #f06a6a
+- Trello: #0079BF (כחול)
+- Basecamp: #1D2D35 (כחול כהה)
+
+Support:
+- Zendesk: #03363D (ירוק כהה)
+- Freshdesk: #21B573 (ירוק)
+- Salesforce Service Cloud: #00A1E0
+
+Product:
+- GitHub Actions: #181717 (שחור)
+- Jenkins: #D24939 (אדום)
+- GitLab CI/CD: #FC6D26 (כתום)
+- Jira: #0052CC (כחול)
+- Trello: #0079BF
+- Monday.com: #FF0476 (ורוד)
+
+Legal:
+- DocuSign: #FFCC00 (צהוב)
+- Adobe Sign: #FA0F00 (אדום)
+- Salesforce Contract: #00A1E0
+
+Finance:
+- QuickBooks: #2CA01C (ירוק)
+- Xero: #13B5EA (כחול)
+- Sage: #00DC06 (ירוק)
+
+HR:
+- Greenhouse: #1BC47D (ירוק)
+- Workday: #EB1D25 (אדום)
+- LinkedIn Recruiter: #0077B5 (כחול)
