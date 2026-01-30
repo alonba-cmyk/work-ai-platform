@@ -3,7 +3,6 @@ import { useState, useEffect, useCallback } from 'react';
 import { Play, Pause, SkipForward, RotateCcw, Sparkles, Users, Phone, Check, Mail, PhoneCall } from 'lucide-react';
 import sidekickLogo from '@/assets/1babfe88a809998ec3c5c5d597d8051ef7639a6f.png';
 import mondayCrmLogo from '@/assets/monday-crm-logo.png';
-import mondayCampaignsLogo from '@/assets/monday-campaigns-logo.png';
 
 interface AnimatedStoryViewProps {
   department: string;
@@ -19,18 +18,16 @@ interface StoryStep {
 }
 
 const storySteps: StoryStep[] = [
-  { id: 1, title: 'Campaign Ideas', description: 'Sidekick suggests creative campaigns', duration: 5000 },
-  { id: 2, title: 'Campaign Selected', description: 'You choose the perfect campaign', duration: 4000 },
-  { id: 3, title: 'Email Campaign', description: 'Sending invites via monday campaigns', duration: 5000 },
-  { id: 4, title: 'Customer Responses', description: 'Customers confirm their attendance', duration: 4000 },
-  { id: 5, title: 'Agent Creation', description: 'Sidekick deploys an AI agent', duration: 4000 },
-  { id: 6, title: 'Agent Calling', description: 'Agent follows up with remaining leads', duration: 6000 },
-  { id: 7, title: 'Success!', description: 'Campaign complete - all confirmed!', duration: 5000 },
+  { id: 1, title: 'Request', description: 'You ask Sidekick to create an event campaign', duration: 4000 },
+  { id: 2, title: 'Planning', description: 'Sidekick outlines the campaign plan', duration: 4000 },
+  { id: 3, title: 'Sending Emails', description: 'Invitations sent via monday campaigns', duration: 5000 },
+  { id: 4, title: 'Responses', description: 'Some customers confirm attendance', duration: 4000 },
+  { id: 5, title: 'Agent Created', description: 'AI Agent deployed for follow-ups', duration: 4000 },
+  { id: 6, title: 'Agent Calling', description: 'Agent calls remaining leads', duration: 6000 },
+  { id: 7, title: 'Complete', description: 'All leads confirmed!', duration: 4000 },
 ];
 
-// Fixed dimensions - never changes
 const STAGE_HEIGHT = 480;
-const COLUMN_GAP = 24;
 
 export function AnimatedStoryView({ agents = [] }: AnimatedStoryViewProps) {
   const [currentStep, setCurrentStep] = useState(0);
@@ -39,19 +36,18 @@ export function AnimatedStoryView({ agents = [] }: AnimatedStoryViewProps) {
   const [isComplete, setIsComplete] = useState(false);
   
   // Animation states
-  const [confirmedRows, setConfirmedRows] = useState<number[]>([]);
-  const [callCount, setCallCount] = useState(0);
   const [typingIndex, setTypingIndex] = useState(0);
-  const [showResponse, setShowResponse] = useState(false);
-  const [agentMessageIndex, setAgentMessageIndex] = useState(0);
-  const [showCustomerResponse, setShowCustomerResponse] = useState(false);
-  const [callDuration, setCallDuration] = useState(0);
   const [emailsSent, setEmailsSent] = useState(0);
   const [emailConfirmedRows, setEmailConfirmedRows] = useState<number[]>([]);
   const [agentCreationProgress, setAgentCreationProgress] = useState(0);
+  const [callMessageIndex, setCallMessageIndex] = useState(0);
+  const [showCallResponse, setShowCallResponse] = useState(false);
+  const [callDuration, setCallDuration] = useState(0);
+  const [finalConfirmedRows, setFinalConfirmedRows] = useState<number[]>([]);
 
-  const userMessage = "I need to create an event campaign for next week";
-  const agentCallMessage = "Hi! I'm calling about the marketing event next week. Will you be joining us?";
+  const userMessage = "Create an event campaign for next week";
+  const callMessage = "Hi! Will you be joining us for the marketing event?";
+  const leads = ['Sarah Johnson', 'Mike Chen', 'Emily Davis', 'Alex Kim', 'Jordan Lee'];
 
   // Auto-advance
   useEffect(() => {
@@ -63,33 +59,20 @@ export function AnimatedStoryView({ agents = [] }: AnimatedStoryViewProps) {
         setIsComplete(true);
         setIsPlaying(false);
       }
-    }, storySteps[currentStep]?.duration || 5000);
+    }, storySteps[currentStep]?.duration || 4000);
     return () => clearTimeout(timer);
   }, [currentStep, isPlaying, isComplete]);
 
-  // Reset states on step change
-  useEffect(() => {
-    if (currentStep === 0) { setTypingIndex(0); setShowResponse(false); }
-    else if (currentStep === 2) { setEmailsSent(0); }
-    else if (currentStep === 3) { setEmailConfirmedRows([]); }
-    else if (currentStep === 4) { setAgentCreationProgress(0); }
-    else if (currentStep === 5) { setCallCount(0); setAgentMessageIndex(0); setShowCustomerResponse(false); setCallDuration(0); }
-    else if (currentStep === 6) { setConfirmedRows([]); }
-  }, [currentStep]);
-
   // Step 1: Typing
   useEffect(() => {
-    if (currentStep !== 0 || !isPlaying) return;
+    if (currentStep < 0 || !isPlaying) return;
     if (typingIndex < userMessage.length) {
-      const timer = setTimeout(() => setTypingIndex(prev => prev + 1), 50);
-      return () => clearTimeout(timer);
-    } else if (!showResponse) {
-      const timer = setTimeout(() => setShowResponse(true), 500);
+      const timer = setTimeout(() => setTypingIndex(prev => prev + 1), 60);
       return () => clearTimeout(timer);
     }
-  }, [currentStep, typingIndex, showResponse, isPlaying]);
+  }, [currentStep, typingIndex, isPlaying]);
 
-  // Step 3: Emails
+  // Step 3: Emails sent
   useEffect(() => {
     if (currentStep !== 2 || !isPlaying) return;
     if (emailsSent < 5) {
@@ -101,8 +84,8 @@ export function AnimatedStoryView({ agents = [] }: AnimatedStoryViewProps) {
   // Step 4: Email confirmations
   useEffect(() => {
     if (currentStep !== 3 || !isPlaying) return;
-    [0, 1, 2].forEach((row, index) => {
-      setTimeout(() => setEmailConfirmedRows(prev => [...prev, row]), 800 * (index + 1));
+    [0, 1, 2].forEach((row, idx) => {
+      setTimeout(() => setEmailConfirmedRows(prev => prev.includes(row) ? prev : [...prev, row]), 800 * (idx + 1));
     });
   }, [currentStep, isPlaying]);
 
@@ -110,31 +93,24 @@ export function AnimatedStoryView({ agents = [] }: AnimatedStoryViewProps) {
   useEffect(() => {
     if (currentStep !== 4 || !isPlaying) return;
     if (agentCreationProgress < 100) {
-      const timer = setTimeout(() => setAgentCreationProgress(prev => Math.min(prev + 3, 100)), 80);
+      const timer = setTimeout(() => setAgentCreationProgress(prev => Math.min(prev + 4, 100)), 100);
       return () => clearTimeout(timer);
     }
   }, [currentStep, agentCreationProgress, isPlaying]);
 
-  // Step 6: Calls
+  // Step 6: Call message typing
   useEffect(() => {
     if (currentStep !== 5 || !isPlaying) return;
-    if (callCount < 2) {
-      const timer = setTimeout(() => setCallCount(prev => Math.min(prev + 1, 2)), 2000);
+    if (callMessageIndex < callMessage.length) {
+      const timer = setTimeout(() => setCallMessageIndex(prev => prev + 1), 50);
+      return () => clearTimeout(timer);
+    } else if (!showCallResponse) {
+      const timer = setTimeout(() => setShowCallResponse(true), 800);
       return () => clearTimeout(timer);
     }
-  }, [currentStep, callCount, isPlaying]);
+  }, [currentStep, callMessageIndex, showCallResponse, isPlaying]);
 
-  useEffect(() => {
-    if (currentStep !== 5 || !isPlaying) return;
-    if (agentMessageIndex < agentCallMessage.length) {
-      const timer = setTimeout(() => setAgentMessageIndex(prev => prev + 1), 40);
-      return () => clearTimeout(timer);
-    } else if (!showCustomerResponse) {
-      const timer = setTimeout(() => setShowCustomerResponse(true), 800);
-      return () => clearTimeout(timer);
-    }
-  }, [currentStep, agentMessageIndex, showCustomerResponse, isPlaying]);
-
+  // Step 6: Call duration
   useEffect(() => {
     if (currentStep !== 5 || !isPlaying) return;
     const timer = setInterval(() => setCallDuration(prev => prev + 1), 1000);
@@ -144,8 +120,8 @@ export function AnimatedStoryView({ agents = [] }: AnimatedStoryViewProps) {
   // Step 7: Final confirmations
   useEffect(() => {
     if (currentStep !== 6 || !isPlaying) return;
-    [0, 1, 2, 3, 4].forEach((row, index) => {
-      setTimeout(() => setConfirmedRows(prev => [...prev, row]), 400 * (index + 1));
+    [3, 4].forEach((row, idx) => {
+      setTimeout(() => setFinalConfirmedRows(prev => prev.includes(row) ? prev : [...prev, row]), 600 * (idx + 1));
     });
   }, [currentStep, isPlaying]);
 
@@ -154,16 +130,14 @@ export function AnimatedStoryView({ agents = [] }: AnimatedStoryViewProps) {
       setCurrentStep(0);
       setIsComplete(false);
       setIsPlaying(true);
-      setConfirmedRows([]);
-      setCallCount(0);
       setTypingIndex(0);
-      setShowResponse(false);
-      setAgentMessageIndex(0);
-      setShowCustomerResponse(false);
-      setCallDuration(0);
       setEmailsSent(0);
       setEmailConfirmedRows([]);
       setAgentCreationProgress(0);
+      setCallMessageIndex(0);
+      setShowCallResponse(false);
+      setCallDuration(0);
+      setFinalConfirmedRows([]);
     } else {
       setIsPlaying(prev => !prev);
     }
@@ -179,20 +153,18 @@ export function AnimatedStoryView({ agents = [] }: AnimatedStoryViewProps) {
     setIsPlaying(true);
   }, []);
 
-  const formatDuration = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
+  const formatDuration = (seconds: number) => `${Math.floor(seconds / 60)}:${(seconds % 60).toString().padStart(2, '0')}`;
 
-  const getStatus = (index: number) => {
-    if (confirmedRows.includes(index)) return { text: '✓ Attend', bg: 'rgba(34, 197, 94, 0.3)', color: 'rgb(134, 239, 172)' };
-    if (emailConfirmedRows.includes(index)) return { text: index === 2 ? 'Maybe' : '✓ Attend', bg: index === 2 ? 'rgba(253, 171, 61, 0.3)' : 'rgba(34, 197, 94, 0.3)', color: index === 2 ? 'rgb(253, 224, 71)' : 'rgb(134, 239, 172)' };
-    if (emailsSent > index) return { text: 'Invited', bg: 'rgba(99, 102, 241, 0.3)', color: 'rgb(165, 180, 252)' };
+  // Get lead status based on current step
+  const getLeadStatus = (index: number) => {
+    if (finalConfirmedRows.includes(index) || emailConfirmedRows.includes(index)) {
+      return { text: '✓ Attend', bg: 'rgba(34, 197, 94, 0.3)', color: 'rgb(134, 239, 172)' };
+    }
+    if (emailsSent > index && currentStep >= 2) {
+      return { text: 'Invited', bg: 'rgba(99, 102, 241, 0.3)', color: 'rgb(165, 180, 252)' };
+    }
     return { text: 'New Lead', bg: 'rgba(107, 114, 128, 0.3)', color: 'rgb(156, 163, 175)' };
   };
-
-  const leads = ['Sarah Johnson', 'Mike Chen', 'Emily Davis', 'Alex Kim', 'Jordan Lee'];
 
   return (
     <div style={{ width: '100%' }}>
@@ -236,7 +208,7 @@ export function AnimatedStoryView({ agents = [] }: AnimatedStoryViewProps) {
         <span className="text-indigo-400 text-sm font-medium">Step {currentStep + 1}: {storySteps[currentStep]?.title}</span>
       </div>
 
-      {/* FIXED SIZE STAGE - Uses absolute positioning to prevent any size changes */}
+      {/* FIXED SIZE STAGE */}
       <div
         style={{
           position: 'relative',
@@ -248,7 +220,7 @@ export function AnimatedStoryView({ agents = [] }: AnimatedStoryViewProps) {
           overflow: 'hidden',
         }}
       >
-        {/* LEFT COLUMN - Absolutely positioned */}
+        {/* LEFT COLUMN - CRM Board (always visible) */}
         <div
           style={{
             position: 'absolute',
@@ -272,27 +244,29 @@ export function AnimatedStoryView({ agents = [] }: AnimatedStoryViewProps) {
           </div>
           
           {/* Board Rows */}
-          <div className="p-4 space-y-2">
+          <div className="p-3 space-y-2">
             {leads.map((name, index) => {
-              const status = getStatus(index);
-              const isConfirmed = confirmedRows.includes(index) || (emailConfirmedRows.includes(index) && index !== 2);
+              const status = getLeadStatus(index);
+              const isConfirmed = emailConfirmedRows.includes(index) || finalConfirmedRows.includes(index);
               
               return (
                 <motion.div
                   key={name}
-                  className="h-12 rounded-lg flex items-center px-4 gap-4"
+                  className="h-11 rounded-lg flex items-center px-3 gap-3"
                   style={{ background: 'rgba(255, 255, 255, 0.03)', border: '1px solid rgba(255, 255, 255, 0.05)' }}
                   animate={{
                     borderColor: isConfirmed ? 'rgba(34, 197, 94, 0.5)' : 'rgba(255, 255, 255, 0.05)',
-                    boxShadow: isConfirmed ? '0 0 20px rgba(34, 197, 94, 0.2)' : 'none'
+                    boxShadow: isConfirmed ? '0 0 15px rgba(34, 197, 94, 0.2)' : 'none'
                   }}
                 >
-                  <div className="w-4 h-4 rounded border border-white/20" />
+                  <div className="w-7 h-7 rounded-full bg-white/10 flex items-center justify-center text-white/60 text-xs font-medium">
+                    {name.split(' ').map(n => n[0]).join('')}
+                  </div>
                   <span className="text-white/70 text-sm flex-1">{name}</span>
                   <motion.div
-                    className="h-6 w-24 rounded-full flex items-center justify-center text-xs font-medium"
+                    className="h-5 px-2 rounded-full flex items-center justify-center text-[10px] font-medium"
                     animate={{ backgroundColor: status.bg, color: status.color }}
-                    transition={{ duration: 0.5 }}
+                    transition={{ duration: 0.4 }}
                   >
                     {status.text}
                   </motion.div>
@@ -301,47 +275,155 @@ export function AnimatedStoryView({ agents = [] }: AnimatedStoryViewProps) {
             })}
           </div>
 
-          {/* Agent Avatar - Steps 5+ */}
+          {/* Agent Avatar - appears at step 5+ */}
           <AnimatePresence>
             {currentStep >= 4 && (
               <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                style={{ position: 'absolute', bottom: '16px', left: '16px' }}
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.8 }}
+                style={{ position: 'absolute', bottom: '12px', left: '12px' }}
               >
-                <motion.div animate={currentStep === 5 ? { scale: [1, 1.05, 1] } : {}} transition={{ repeat: currentStep === 5 ? Infinity : 0, duration: 1.5 }}>
+                <motion.div 
+                  animate={currentStep === 5 ? { scale: [1, 1.08, 1] } : {}} 
+                  transition={{ repeat: currentStep === 5 ? Infinity : 0, duration: 1.5 }}
+                  className="relative"
+                >
                   <div 
-                    className="w-16 h-16 rounded-full flex items-center justify-center overflow-hidden"
+                    className="w-14 h-14 rounded-full flex items-center justify-center overflow-hidden"
                     style={{
                       background: featuredAgent?.image ? 'transparent' : 'linear-gradient(135deg, #6366f1, #8b5cf6)',
-                      boxShadow: currentStep === 5 ? '0 0 30px rgba(99, 102, 241, 0.6)' : '0 0 15px rgba(99, 102, 241, 0.4)',
-                      border: '3px solid rgba(99, 102, 241, 0.8)'
+                      boxShadow: currentStep === 5 ? '0 0 25px rgba(99, 102, 241, 0.7)' : '0 0 12px rgba(99, 102, 241, 0.4)',
+                      border: '2px solid rgba(99, 102, 241, 0.8)'
                     }}
                   >
                     {featuredAgent?.image ? (
                       <img src={featuredAgent.image} alt={featuredAgent.name} className="w-full h-full object-cover" style={{ transform: 'scale(1.2)' }} />
                     ) : (
-                      <Users className="w-8 h-8 text-white" />
+                      <Users className="w-6 h-6 text-white" />
                     )}
                   </div>
-                  <motion.div
-                    animate={currentStep === 5 ? { rotate: [0, -15, 15, -15, 0] } : {}}
-                    transition={{ repeat: currentStep === 5 ? Infinity : 0, duration: 0.6 }}
-                    className={`absolute -right-1 -bottom-1 w-6 h-6 rounded-full flex items-center justify-center ${currentStep === 5 ? 'bg-green-500' : currentStep >= 6 ? 'bg-green-500' : 'bg-indigo-500'}`}
-                  >
-                    {currentStep === 5 ? <Phone className="w-3 h-3 text-white" /> : currentStep >= 6 ? <Check className="w-3 h-3 text-white" /> : <Sparkles className="w-3 h-3 text-white" />}
-                  </motion.div>
-                  <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 whitespace-nowrap">
-                    <span className="text-white/60 text-xs">{featuredAgent?.name || 'RSVP Agent'}</span>
+                  <div className={`absolute -right-1 -bottom-1 w-5 h-5 rounded-full flex items-center justify-center ${currentStep === 5 ? 'bg-green-500' : 'bg-indigo-500'}`}>
+                    {currentStep === 5 ? <Phone className="w-2.5 h-2.5 text-white" /> : currentStep >= 6 ? <Check className="w-2.5 h-2.5 text-white" /> : <Sparkles className="w-2.5 h-2.5 text-white" />}
                   </div>
                 </motion.div>
               </motion.div>
             )}
           </AnimatePresence>
+
+          {/* CALL POPUP - Overlays the board during step 6 */}
+          <AnimatePresence>
+            {currentStep === 5 && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 20 }}
+                style={{
+                  position: 'absolute',
+                  top: '50px',
+                  left: '10px',
+                  right: '10px',
+                  bottom: '80px',
+                  background: 'rgba(15, 15, 25, 0.98)',
+                  border: '1px solid rgba(34, 197, 94, 0.5)',
+                  borderRadius: '12px',
+                  boxShadow: '0 0 30px rgba(34, 197, 94, 0.3)',
+                  padding: '12px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                }}
+              >
+                {/* Call Header */}
+                <div className="flex items-center justify-between mb-3 pb-2 border-b border-white/10">
+                  <div className="flex items-center gap-2">
+                    <motion.div
+                      animate={{ scale: [1, 1.15, 1] }}
+                      transition={{ repeat: Infinity, duration: 1 }}
+                      className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center"
+                    >
+                      <PhoneCall className="w-4 h-4 text-white" />
+                    </motion.div>
+                    <div>
+                      <span className="text-white font-semibold text-sm">Active Call</span>
+                      <div className="text-green-400 text-[10px] flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+                        Alex Kim
+                      </div>
+                    </div>
+                  </div>
+                  <span className="text-white/50 text-xs font-mono">{formatDuration(callDuration)}</span>
+                </div>
+
+                {/* Call Participants */}
+                <div className="flex items-center justify-center gap-3 py-3">
+                  <div className="text-center">
+                    <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-indigo-500 mx-auto mb-1" style={{ boxShadow: '0 0 12px rgba(99, 102, 241, 0.5)' }}>
+                      {featuredAgent?.image ? (
+                        <img src={featuredAgent.image} alt="" className="w-full h-full object-cover" style={{ transform: 'scale(1.3)' }} />
+                      ) : (
+                        <div className="w-full h-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center"><Users className="w-5 h-5 text-white" /></div>
+                      )}
+                    </div>
+                    <p className="text-white/80 text-[10px]">{featuredAgent?.name || 'Agent'}</p>
+                  </div>
+                  <motion.div
+                    animate={{ rotate: [0, -8, 8, -8, 0] }}
+                    transition={{ repeat: Infinity, duration: 0.7 }}
+                    className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center"
+                    style={{ boxShadow: '0 0 15px rgba(34, 197, 94, 0.5)' }}
+                  >
+                    <Phone className="w-4 h-4 text-white" />
+                  </motion.div>
+                  <div className="text-center">
+                    <div className="w-12 h-12 rounded-full border-2 border-pink-500 mx-auto mb-1 bg-gradient-to-br from-pink-400 to-rose-500 flex items-center justify-center" style={{ boxShadow: '0 0 12px rgba(236, 72, 153, 0.5)' }}>
+                      <span className="text-white font-bold text-sm">AK</span>
+                    </div>
+                    <p className="text-white/80 text-[10px]">Alex Kim</p>
+                  </div>
+                </div>
+
+                {/* Call Conversation */}
+                <div className="flex-1 space-y-2 overflow-y-auto">
+                  <div className="flex gap-2">
+                    <div className="w-5 h-5 rounded-full bg-indigo-500 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                      {featuredAgent?.image ? <img src={featuredAgent.image} alt="" className="w-full h-full object-cover" style={{ transform: 'scale(1.3)' }} /> : <Users className="w-2.5 h-2.5 text-white" />}
+                    </div>
+                    <div className="bg-indigo-600/30 rounded-lg rounded-tl-sm px-2 py-1.5 max-w-[85%]">
+                      <p className="text-white text-xs">{callMessage.slice(0, callMessageIndex)}{callMessageIndex < callMessage.length && <span className="animate-pulse">|</span>}</p>
+                    </div>
+                  </div>
+                  {showCallResponse && (
+                    <motion.div 
+                      initial={{ opacity: 0, y: 5 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="flex gap-2 justify-end"
+                    >
+                      <div className="bg-pink-500/20 rounded-lg rounded-tr-sm px-2 py-1.5 max-w-[85%]">
+                        <p className="text-white text-xs">Yes, I'll be there! 🎉</p>
+                      </div>
+                      <div className="w-5 h-5 rounded-full bg-gradient-to-br from-pink-400 to-rose-500 flex items-center justify-center flex-shrink-0 text-white text-[8px] font-bold">AK</div>
+                    </motion.div>
+                  )}
+                  {showCallResponse && (
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: 0.3 }}
+                      className="flex justify-center pt-1"
+                    >
+                      <div className="bg-green-500/20 border border-green-500/30 rounded-full px-2 py-0.5 flex items-center gap-1">
+                        <Check className="w-2.5 h-2.5 text-green-400" />
+                        <span className="text-green-400 text-[10px] font-medium">Confirmed!</span>
+                      </div>
+                    </motion.div>
+                  )}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
 
-        {/* RIGHT COLUMN - Absolutely positioned */}
+        {/* RIGHT COLUMN - Sidekick Chat (progressive messages) */}
         <div
           style={{
             position: 'absolute',
@@ -352,214 +434,181 @@ export function AnimatedStoryView({ agents = [] }: AnimatedStoryViewProps) {
             overflow: 'hidden',
           }}
         >
-          {/* Step 1: Campaign Ideas */}
-          <div style={{ position: 'absolute', inset: 0, opacity: currentStep === 0 ? 1 : 0, transition: 'opacity 0.3s', pointerEvents: currentStep === 0 ? 'auto' : 'none' }}>
-            <div className="h-full rounded-xl p-4 flex flex-col relative" style={{ background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(240, 240, 245, 0.9))' }}>
-              <div className="absolute inset-0 rounded-xl -z-10" style={{ background: 'linear-gradient(135deg, #ec4899, #f59e0b)', margin: '-2px', borderRadius: 'inherit', boxShadow: '0 0 30px rgba(236, 72, 153, 0.3)' }} />
-              <div className="flex items-center gap-3 mb-3 pb-2 border-b border-gray-200">
-                <div className="w-10 h-10 rounded-lg overflow-hidden"><img src={sidekickLogo} alt="Sidekick" className="w-full h-full object-contain" /></div>
-                <div><span className="text-gray-800 font-semibold">Sidekick</span><div className="text-amber-600 text-xs">Your AI Assistant</div></div>
+          <div 
+            className="h-full rounded-xl p-4 flex flex-col relative"
+            style={{ 
+              background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(240, 240, 245, 0.9))',
+            }}
+          >
+            {/* Gradient border */}
+            <div 
+              className="absolute inset-0 rounded-xl -z-10"
+              style={{ 
+                background: 'linear-gradient(135deg, #ec4899, #f59e0b)', 
+                margin: '-2px', 
+                borderRadius: 'inherit',
+                boxShadow: '0 0 30px rgba(236, 72, 153, 0.3)'
+              }}
+            />
+            
+            {/* Sidekick Header */}
+            <div className="flex items-center gap-3 mb-3 pb-2 border-b border-gray-200">
+              <div className="w-10 h-10 rounded-lg overflow-hidden">
+                <img src={sidekickLogo} alt="Sidekick" className="w-full h-full object-contain" />
               </div>
-              <div className="flex-1 space-y-3 overflow-y-auto">
-                <div className="flex justify-end">
-                  <div className="bg-indigo-600 rounded-2xl rounded-br-md px-3 py-2 max-w-[85%]">
-                    <p className="text-white text-sm">{userMessage.slice(0, typingIndex)}{typingIndex < userMessage.length && <span className="animate-pulse">|</span>}</p>
-                  </div>
+              <div>
+                <span className="text-gray-800 font-semibold">Sidekick</span>
+                <div className="text-amber-600 text-xs">Your AI Assistant</div>
+              </div>
+            </div>
+
+            {/* Chat Messages - Progressive */}
+            <div className="flex-1 space-y-3 overflow-y-auto">
+              {/* Step 1: User message */}
+              <div className="flex justify-end">
+                <div className="bg-indigo-600 rounded-2xl rounded-br-md px-3 py-2 max-w-[85%]">
+                  <p className="text-white text-sm">
+                    {userMessage.slice(0, typingIndex)}
+                    {currentStep === 0 && typingIndex < userMessage.length && <span className="animate-pulse">|</span>}
+                  </p>
                 </div>
-                {showResponse && (
-                  <div className="flex justify-start">
-                    <div className="bg-gray-100 rounded-2xl rounded-bl-md px-3 py-2 max-w-[95%] shadow-sm">
-                      <p className="text-gray-800 text-sm mb-2">Great! Here's what I'll do:</p>
-                      <ul className="text-gray-600 text-sm space-y-1.5 mb-3">
-                        <li className="flex items-center gap-2"><Mail className="w-3 h-3 text-amber-600" /> Email invitations via monday campaigns</li>
-                        <li className="flex items-center gap-2"><Phone className="w-3 h-3 text-amber-600" /> AI Agent for phone confirmations</li>
-                        <li className="flex items-center gap-2"><Users className="w-3 h-3 text-amber-600" /> RSVP tracking on your CRM</li>
-                      </ul>
-                      <p className="text-gray-800 text-sm mb-2">Choose an email creative:</p>
-                      <div className="space-y-2">
-                        {[{ name: 'VIP Launch Party', subject: "You're Invited: Exclusive VIP Event", color: 'from-purple-500 to-indigo-600' }, { name: 'Community Meetup', subject: "Let's Connect: Community Event", color: 'from-green-500 to-teal-600' }].map((campaign) => (
-                          <div key={campaign.name} className="p-2 rounded-lg bg-white border border-gray-200 hover:border-indigo-400 cursor-pointer">
-                            <div className="flex items-start gap-2">
-                              <div className={`w-10 h-10 rounded bg-gradient-to-br ${campaign.color} flex items-center justify-center flex-shrink-0`}><Mail className="w-4 h-4 text-white" /></div>
-                              <div className="flex-1 min-w-0"><p className="text-gray-800 text-xs font-semibold truncate">{campaign.name}</p><p className="text-indigo-600 text-[10px] truncate">{campaign.subject}</p></div>
-                            </div>
-                          </div>
-                        ))}
+              </div>
+
+              {/* Step 2+: Sidekick plan */}
+              {currentStep >= 1 && (
+                <motion.div 
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="flex justify-start"
+                >
+                  <div className="bg-gray-100 rounded-2xl rounded-bl-md px-3 py-2 max-w-[95%] shadow-sm">
+                    <p className="text-gray-800 text-sm mb-2">Perfect! Here's my plan:</p>
+                    <ul className="text-gray-600 text-xs space-y-1">
+                      <li className="flex items-center gap-2"><Mail className="w-3 h-3 text-amber-600" /> Send email invitations</li>
+                      <li className="flex items-center gap-2"><Phone className="w-3 h-3 text-amber-600" /> Create AI agent for calls</li>
+                      <li className="flex items-center gap-2"><Users className="w-3 h-3 text-amber-600" /> Track RSVPs in CRM</li>
+                    </ul>
+                  </div>
+                </motion.div>
+              )}
+
+              {/* Step 3: Sending emails */}
+              {currentStep >= 2 && (
+                <motion.div 
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="flex justify-start"
+                >
+                  <div className="bg-gray-100 rounded-2xl rounded-bl-md px-3 py-2 max-w-[95%] shadow-sm">
+                    <p className="text-gray-800 text-sm flex items-center gap-2">
+                      <Mail className="w-4 h-4 text-indigo-600" />
+                      Sending email invitations... <span className="text-indigo-600 font-semibold">{emailsSent}/5</span>
+                    </p>
+                    {emailsSent >= 5 && (
+                      <p className="text-green-600 text-xs mt-1 flex items-center gap-1">
+                        <Check className="w-3 h-3" /> All emails sent!
+                      </p>
+                    )}
+                  </div>
+                </motion.div>
+              )}
+
+              {/* Step 4: Responses */}
+              {currentStep >= 3 && (
+                <motion.div 
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="flex justify-start"
+                >
+                  <div className="bg-gray-100 rounded-2xl rounded-bl-md px-3 py-2 max-w-[95%] shadow-sm">
+                    <p className="text-gray-800 text-sm">
+                      <span className="text-green-600 font-semibold">{emailConfirmedRows.length}</span> confirmed via email!
+                    </p>
+                    <p className="text-amber-600 text-xs mt-1">
+                      {5 - emailConfirmedRows.length} leads still pending...
+                    </p>
+                  </div>
+                </motion.div>
+              )}
+
+              {/* Step 5: Creating agent */}
+              {currentStep >= 4 && (
+                <motion.div 
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="flex justify-start"
+                >
+                  <div className="bg-gray-100 rounded-2xl rounded-bl-md px-3 py-2 max-w-[95%] shadow-sm">
+                    <p className="text-gray-800 text-sm flex items-center gap-2">
+                      <Sparkles className="w-4 h-4 text-purple-600" />
+                      Creating AI agent for follow-ups...
+                    </p>
+                    {agentCreationProgress >= 100 ? (
+                      <p className="text-green-600 text-xs mt-1 flex items-center gap-1">
+                        <Check className="w-3 h-3" /> {featuredAgent?.name || 'RSVP Agent'} ready!
+                      </p>
+                    ) : (
+                      <div className="mt-2 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                        <motion.div 
+                          className="h-full bg-gradient-to-r from-indigo-500 to-purple-500"
+                          style={{ width: `${agentCreationProgress}%` }}
+                        />
+                      </div>
+                    )}
+                  </div>
+                </motion.div>
+              )}
+
+              {/* Step 6: Agent calling */}
+              {currentStep >= 5 && (
+                <motion.div 
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="flex justify-start"
+                >
+                  <div className="bg-gray-100 rounded-2xl rounded-bl-md px-3 py-2 max-w-[95%] shadow-sm">
+                    <p className="text-gray-800 text-sm flex items-center gap-2">
+                      <Phone className="w-4 h-4 text-green-600" />
+                      Agent is calling remaining leads...
+                    </p>
+                    {showCallResponse && (
+                      <p className="text-green-600 text-xs mt-1 flex items-center gap-1">
+                        <Check className="w-3 h-3" /> Alex Kim confirmed!
+                      </p>
+                    )}
+                  </div>
+                </motion.div>
+              )}
+
+              {/* Step 7: Complete */}
+              {currentStep >= 6 && (
+                <motion.div 
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="flex justify-start"
+                >
+                  <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl rounded-bl-md px-3 py-3 max-w-[95%] shadow-sm border border-green-200">
+                    <p className="text-green-800 text-sm font-semibold flex items-center gap-2">
+                      <Check className="w-5 h-5 text-green-600" />
+                      Campaign Complete! 🎉
+                    </p>
+                    <div className="grid grid-cols-3 gap-2 mt-2">
+                      <div className="text-center p-1.5 rounded bg-white/60">
+                        <div className="text-green-600 font-bold text-sm">5</div>
+                        <div className="text-gray-500 text-[9px]">Invites</div>
+                      </div>
+                      <div className="text-center p-1.5 rounded bg-white/60">
+                        <div className="text-green-600 font-bold text-sm">5</div>
+                        <div className="text-gray-500 text-[9px]">Confirmed</div>
+                      </div>
+                      <div className="text-center p-1.5 rounded bg-white/60">
+                        <div className="text-green-600 font-bold text-sm">100%</div>
+                        <div className="text-gray-500 text-[9px]">Success</div>
                       </div>
                     </div>
                   </div>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Step 2: Campaign Selected */}
-          <div style={{ position: 'absolute', inset: 0, opacity: currentStep === 1 ? 1 : 0, transition: 'opacity 0.3s', pointerEvents: currentStep === 1 ? 'auto' : 'none' }}>
-            <div className="h-full rounded-xl p-4 flex flex-col relative" style={{ background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(240, 240, 245, 0.9))' }}>
-              <div className="absolute inset-0 rounded-xl -z-10" style={{ background: 'linear-gradient(135deg, #ec4899, #f59e0b)', margin: '-2px', borderRadius: 'inherit', boxShadow: '0 0 30px rgba(236, 72, 153, 0.3)' }} />
-              <div className="flex items-center gap-3 mb-3 pb-2 border-b border-gray-200">
-                <div className="w-10 h-10 rounded-lg overflow-hidden"><img src={sidekickLogo} alt="Sidekick" className="w-full h-full object-contain" /></div>
-                <div><span className="text-gray-800 font-semibold">Sidekick</span><div className="text-amber-600 text-xs">Campaign Selected</div></div>
-              </div>
-              <div className="flex-1 space-y-3">
-                <div className="p-3 rounded-xl bg-gradient-to-br from-purple-500 to-indigo-600 text-white">
-                  <div className="flex items-center gap-3">
-                    <div className="w-14 h-14 rounded-lg bg-white/20 flex items-center justify-center"><Sparkles className="w-7 h-7 text-white" /></div>
-                    <div><p className="font-bold text-lg">VIP Launch Party</p><p className="text-white/80 text-sm">Exclusive invite with premium feel</p></div>
-                    <Check className="w-6 h-6 text-green-300 ml-auto" />
-                  </div>
-                </div>
-                <div className="bg-gray-100 rounded-xl p-3">
-                  <p className="text-gray-700 text-sm">Great choice! I'll now send email invitations to all your contacts via <span className="font-semibold text-indigo-600">monday campaigns</span>.</p>
-                </div>
-                <div className="flex items-center justify-center gap-2 py-3">
-                  <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: 'linear' }} className="w-5 h-5 border-2 border-indigo-500 border-t-transparent rounded-full" />
-                  <span className="text-gray-600 text-sm">Preparing campaign...</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Step 3: Email Campaign */}
-          <div style={{ position: 'absolute', inset: 0, opacity: currentStep === 2 ? 1 : 0, transition: 'opacity 0.3s', pointerEvents: currentStep === 2 ? 'auto' : 'none' }}>
-            <div className="h-full rounded-xl p-4 flex flex-col" style={{ background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(168, 85, 247, 0.15))', border: '1px solid rgba(99, 102, 241, 0.3)' }}>
-              <div className="flex items-center gap-2 mb-4 pb-3 border-b border-white/10">
-                <img src={mondayCampaignsLogo} alt="monday campaigns" className="w-10 h-10 rounded flex-shrink-0" />
-                <div className="flex flex-col"><span className="text-white/60 text-[10px] leading-none">monday</span><span className="text-white font-semibold text-sm leading-tight">campaigns</span></div>
-                <div className="ml-auto flex items-center gap-2">
-                  <motion.div animate={{ scale: [1, 1.2, 1] }} transition={{ repeat: Infinity, duration: 1.5 }} className="w-2 h-2 rounded-full bg-green-400" />
-                  <span className="text-green-400 text-xs">Sending...</span>
-                </div>
-              </div>
-              <div className="flex-1 space-y-4">
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm"><span className="text-white/70">Sending to contacts...</span><span className="text-indigo-400">{emailsSent} / 5</span></div>
-                  <div className="h-3 bg-white/10 rounded-full overflow-hidden"><motion.div className="h-full bg-gradient-to-r from-indigo-500 to-purple-500" style={{ width: `${(emailsSent / 5) * 100}%` }} /></div>
-                </div>
-                <div className="space-y-2">
-                  {leads.map((name, idx) => (
-                    <div key={name} className="flex items-center gap-3 p-2 rounded-lg bg-white/5 border border-white/10" style={{ opacity: emailsSent > idx ? 1 : 0.3 }}>
-                      <Mail className={`w-4 h-4 ${emailsSent > idx ? 'text-green-400' : 'text-white/30'}`} />
-                      <span className="text-white/80 text-sm flex-1">{name}</span>
-                      {emailsSent > idx && <div className="flex items-center gap-1"><Check className="w-4 h-4 text-green-400" /><span className="text-green-400 text-xs">Sent</span></div>}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Step 4: Customer Responses */}
-          <div style={{ position: 'absolute', inset: 0, opacity: currentStep === 3 ? 1 : 0, transition: 'opacity 0.3s', pointerEvents: currentStep === 3 ? 'auto' : 'none' }}>
-            <div className="h-full rounded-xl p-4 flex flex-col" style={{ background: 'linear-gradient(135deg, rgba(34, 197, 94, 0.15), rgba(16, 185, 129, 0.15))', border: '1px solid rgba(34, 197, 94, 0.3)' }}>
-              <div className="flex items-center gap-3 mb-4 pb-3 border-b border-white/10">
-                <motion.div animate={{ scale: [1, 1.1, 1] }} transition={{ repeat: Infinity, duration: 1.5 }} className="w-10 h-10 rounded-full bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center"><Check className="w-5 h-5 text-white" /></motion.div>
-                <div><span className="text-white font-semibold">Customer Responses</span><div className="text-green-400 text-xs">{emailConfirmedRows.length} of 5 confirmed via email</div></div>
-              </div>
-              <div className="flex-1 space-y-2">
-                {leads.map((name, idx) => (
-                  <div key={name} className="flex items-center gap-3 p-3 rounded-lg" style={{ background: emailConfirmedRows.includes(idx) ? 'rgba(34, 197, 94, 0.2)' : 'rgba(255, 255, 255, 0.05)', border: emailConfirmedRows.includes(idx) ? '1px solid rgba(34, 197, 94, 0.4)' : '1px solid rgba(255, 255, 255, 0.1)' }}>
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${emailConfirmedRows.includes(idx) ? 'bg-green-500 text-white' : 'bg-white/10 text-white/50'}`}>{name.split(' ').map(n => n[0]).join('')}</div>
-                    <span className="text-white/80 text-sm flex-1">{name}</span>
-                    {emailConfirmedRows.includes(idx) ? <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-green-500/20"><Check className="w-3 h-3 text-green-400" /><span className="text-green-400 text-xs font-medium">Confirmed</span></div> : <span className="text-yellow-400/60 text-xs">Pending...</span>}
-                  </div>
-                ))}
-              </div>
-              <div className="mt-3 p-3 rounded-lg bg-white/5 border border-white/10 text-center">
-                <p className="text-white/70 text-sm"><span className="text-green-400 font-semibold">{emailConfirmedRows.length}</span> confirmed, <span className="text-yellow-400 font-semibold">{5 - emailConfirmedRows.length}</span> need follow-up</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Step 5: Agent Creation */}
-          <div style={{ position: 'absolute', inset: 0, opacity: currentStep === 4 ? 1 : 0, transition: 'opacity 0.3s', pointerEvents: currentStep === 4 ? 'auto' : 'none' }}>
-            <div className="h-full rounded-xl p-4 flex flex-col relative" style={{ background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(240, 240, 245, 0.9))' }}>
-              <div className="absolute inset-0 rounded-xl -z-10" style={{ background: 'linear-gradient(135deg, #ec4899, #f59e0b)', margin: '-2px', borderRadius: 'inherit', boxShadow: '0 0 30px rgba(236, 72, 153, 0.3)' }} />
-              <div className="flex items-center gap-3 mb-3 pb-2 border-b border-gray-200">
-                <div className="w-10 h-10 rounded-lg overflow-hidden"><img src={sidekickLogo} alt="Sidekick" className="w-full h-full object-contain" /></div>
-                <div><span className="text-gray-800 font-semibold">Sidekick</span><div className="text-amber-600 text-xs">Creating AI Agent</div></div>
-              </div>
-              <div className="flex-1 flex flex-col items-center justify-center space-y-4">
-                <div className="bg-gray-100 rounded-xl p-3 w-full"><p className="text-gray-700 text-sm text-center">2 contacts haven't responded yet. I'll create an AI agent to follow up.</p></div>
-                <div className="relative">
-                  <div className="w-20 h-20 rounded-full overflow-hidden border-4 border-indigo-500" style={{ boxShadow: '0 0 30px rgba(99, 102, 241, 0.5)' }}>
-                    {featuredAgent?.image ? <img src={featuredAgent.image} alt={featuredAgent.name} className="w-full h-full object-cover" style={{ transform: 'scale(1.3)' }} /> : <div className="w-full h-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center"><Users className="w-10 h-10 text-white" /></div>}
-                  </div>
-                  {agentCreationProgress >= 100 && <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-green-500 flex items-center justify-center border-2 border-white"><Check className="w-4 h-4 text-white" /></div>}
-                </div>
-                <div className="text-center"><p className="text-gray-800 font-semibold">{featuredAgent?.name || 'RSVP Agent'}</p><p className="text-gray-500 text-sm">{agentCreationProgress < 100 ? 'Creating...' : 'Ready to make calls'}</p></div>
-                <div className="w-full space-y-2">
-                  <div className="h-2 bg-gray-200 rounded-full overflow-hidden"><motion.div className="h-full bg-gradient-to-r from-indigo-500 to-purple-500" style={{ width: `${agentCreationProgress}%` }} /></div>
-                  <p className="text-gray-500 text-xs text-center">{agentCreationProgress < 100 ? 'Configuring agent...' : 'Agent ready!'}</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Step 6: Agent Calling */}
-          <div style={{ position: 'absolute', inset: 0, opacity: currentStep === 5 ? 1 : 0, transition: 'opacity 0.3s', pointerEvents: currentStep === 5 ? 'auto' : 'none' }}>
-            <div className="h-full rounded-xl p-4 flex flex-col" style={{ background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(139, 92, 246, 0.15))', border: '1px solid rgba(99, 102, 241, 0.3)' }}>
-              <div className="flex items-center justify-between mb-4 pb-3 border-b border-white/10">
-                <div className="flex items-center gap-3">
-                  <motion.div animate={{ scale: [1, 1.1, 1] }} transition={{ repeat: Infinity, duration: 1 }} className="w-10 h-10 rounded-full bg-green-500 flex items-center justify-center"><PhoneCall className="w-5 h-5 text-white" /></motion.div>
-                  <div><span className="text-white font-semibold">Active Call</span><div className="text-green-400 text-xs flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />Sarah Johnson</div></div>
-                </div>
-                <div className="text-white/60 text-sm font-mono">{formatDuration(callDuration)}</div>
-              </div>
-              <div className="flex items-center justify-center gap-4 py-4 mb-4">
-                <div className="text-center">
-                  <div className="w-16 h-16 rounded-full overflow-hidden border-3 border-indigo-500 mx-auto mb-1" style={{ boxShadow: '0 0 15px rgba(99, 102, 241, 0.5)' }}>
-                    {featuredAgent?.image ? <img src={featuredAgent.image} alt={featuredAgent.name} className="w-full h-full object-cover" style={{ transform: 'scale(1.3)' }} /> : <div className="w-full h-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center"><Users className="w-6 h-6 text-white" /></div>}
-                  </div>
-                  <p className="text-white text-xs font-medium">{featuredAgent?.name || 'RSVP Agent'}</p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <motion.div className="w-8 h-0.5 rounded-full" style={{ background: 'linear-gradient(to right, #6366f1, #22c55e)' }} animate={{ opacity: [0.5, 1, 0.5] }} transition={{ repeat: Infinity, duration: 1.5 }} />
-                  <motion.div animate={{ rotate: [0, -10, 10, -10, 0] }} transition={{ repeat: Infinity, duration: 0.8 }} className="w-10 h-10 rounded-full bg-green-500 flex items-center justify-center" style={{ boxShadow: '0 0 20px rgba(34, 197, 94, 0.6)' }}><Phone className="w-5 h-5 text-white" /></motion.div>
-                  <motion.div className="w-8 h-0.5 rounded-full" style={{ background: 'linear-gradient(to right, #22c55e, #ec4899)' }} animate={{ opacity: [0.5, 1, 0.5] }} transition={{ repeat: Infinity, duration: 1.5, delay: 0.3 }} />
-                </div>
-                <div className="text-center">
-                  <div className="w-16 h-16 rounded-full overflow-hidden border-3 border-pink-500 mx-auto mb-1 bg-gradient-to-br from-pink-400 to-rose-500 flex items-center justify-center" style={{ boxShadow: '0 0 15px rgba(236, 72, 153, 0.5)' }}><span className="text-white text-lg font-bold">SJ</span></div>
-                  <p className="text-white text-xs font-medium">Sarah Johnson</p>
-                </div>
-              </div>
-              <div className="flex-1 space-y-3 overflow-y-auto">
-                <div className="flex gap-2">
-                  <div className="w-6 h-6 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center flex-shrink-0 overflow-hidden">
-                    {featuredAgent?.image ? <img src={featuredAgent.image} alt="" className="w-full h-full object-cover" style={{ transform: 'scale(1.3)' }} /> : <Users className="w-3 h-3 text-white" />}
-                  </div>
-                  <div className="bg-indigo-600/30 rounded-xl rounded-tl-md px-3 py-2 max-w-[80%]"><p className="text-white text-sm">{agentCallMessage.slice(0, agentMessageIndex)}{agentMessageIndex < agentCallMessage.length && <span className="animate-pulse">|</span>}</p></div>
-                </div>
-                {showCustomerResponse && (
-                  <div className="flex gap-2 justify-end">
-                    <div className="bg-pink-500/20 rounded-xl rounded-tr-md px-3 py-2 max-w-[80%]"><p className="text-white text-sm">Yes, absolutely! Count me in! 🎉</p></div>
-                    <div className="w-6 h-6 rounded-full bg-gradient-to-br from-pink-400 to-rose-500 flex items-center justify-center flex-shrink-0 text-white text-xs font-bold">SJ</div>
-                  </div>
-                )}
-                {showCustomerResponse && (
-                  <div className="flex justify-center">
-                    <div className="bg-green-500/20 border border-green-500/30 rounded-full px-3 py-1 flex items-center gap-2"><Check className="w-3 h-3 text-green-400" /><span className="text-green-400 text-xs font-medium">RSVP Confirmed!</span></div>
-                  </div>
-                )}
-              </div>
-              <div className="mt-3 pt-3 border-t border-white/10 grid grid-cols-2 gap-4">
-                <div className="text-center p-2 rounded-lg bg-white/5"><div className="text-xl font-bold text-indigo-400">{callCount}</div><div className="text-white/60 text-xs">Confirmed</div></div>
-                <div className="text-center p-2 rounded-lg bg-white/5"><div className="text-xl font-bold text-white/40">50</div><div className="text-white/60 text-xs">Total Invites</div></div>
-              </div>
-            </div>
-          </div>
-
-          {/* Step 7: Success */}
-          <div style={{ position: 'absolute', inset: 0, opacity: currentStep === 6 ? 1 : 0, transition: 'opacity 0.3s', pointerEvents: currentStep === 6 ? 'auto' : 'none' }}>
-            <div className="h-full rounded-xl p-6 flex flex-col items-center justify-center" style={{ background: 'linear-gradient(135deg, rgba(34, 197, 94, 0.15), rgba(16, 185, 129, 0.15))', border: '1px solid rgba(34, 197, 94, 0.3)' }}>
-              <motion.div initial={{ scale: 0 }} animate={{ scale: currentStep === 6 ? 1 : 0 }} transition={{ type: 'spring', damping: 10 }} className="w-16 h-16 rounded-full bg-green-500 flex items-center justify-center mb-4"><Check className="w-8 h-8 text-white" /></motion.div>
-              <h4 className="text-white font-bold text-xl mb-2">Campaign Complete!</h4>
-              <p className="text-white/60 text-center text-sm mb-4">Your AI team handled everything</p>
-              <div className="grid grid-cols-3 gap-3 w-full max-w-xs">
-                <div className="text-center p-2 rounded-lg bg-white/5"><div className="text-lg font-bold text-green-400">50</div><div className="text-white/60 text-xs">Invites</div></div>
-                <div className="text-center p-2 rounded-lg bg-white/5"><div className="text-lg font-bold text-green-400">45</div><div className="text-white/60 text-xs">Confirmed</div></div>
-                <div className="text-center p-2 rounded-lg bg-white/5"><div className="text-lg font-bold text-green-400">90%</div><div className="text-white/60 text-xs">Success</div></div>
-              </div>
+                </motion.div>
+              )}
             </div>
           </div>
         </div>
