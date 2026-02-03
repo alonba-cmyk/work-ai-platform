@@ -229,6 +229,165 @@ export function useDepartmentData(departmentId: string | null) {
   };
 }
 
+// Types for site settings
+interface SectionsVisibility {
+  hero: boolean;
+  hero_alternative: boolean;
+  work_comparison: boolean;
+  sidekick_capabilities: boolean;
+  sidekick: boolean;
+  departments: boolean;
+  ai_platform: boolean;
+}
+
+interface HeroSettings {
+  logo_url: string;
+  platform_label: string;
+  headline_text: string;
+  headline_gradient_text: string;
+  font_size: 'small' | 'medium' | 'large' | 'xlarge';
+  background_type: 'solid' | 'gradient' | 'image';
+  background_color: string;
+  background_gradient_from: string;
+  background_gradient_to: string;
+  background_image_url: string;
+}
+
+export interface SolutionTabsVisibility {
+  overview: boolean;
+  inAction: boolean;
+  businessValue: boolean;
+  test: boolean;
+}
+
+// Sidekick theme interface (matches SidekickPanelTheme from context)
+export interface SidekickTheme {
+  panelBackground: string;
+  panelBackdropBlur: string;
+  panelBorderColor: string;
+  panelShadow: string;
+  headerBorderColor: string;
+  headerPrimaryText: string;
+  headerSecondaryText: string;
+  headerLogo: string;
+  headerPrimaryLabel: string;
+  headerSecondaryLabel: string;
+  cardBackground: string;
+  cardBorder: string;
+  cardBackdropBlur: string;
+  primaryText: string;
+  secondaryText: string;
+  mutedText: string;
+  greenAccent: string;
+  amberAccent: string;
+  indigoAccent: string;
+  purpleAccent: string;
+  progressBarBg: string;
+  userMessageBg: string;
+  userMessageText: string;
+  introMessage: string;
+  introBackground: string;
+  introBubbleGradientFrom: string;
+  introBubbleGradientTo: string;
+  introBubbleShadow: string;
+  panelOuterBackground: string;
+}
+
+export interface SiteSettings {
+  hero_title: string;
+  hero_subtitle: string;
+  sections_visibility: SectionsVisibility;
+  hero_settings: HeroSettings;
+  solution_tabs_visibility: SolutionTabsVisibility;
+  sidekick_hero_theme: SidekickTheme | null;
+  sidekick_inaction_theme: SidekickTheme | null;
+}
+
+const defaultSectionsVisibility: SectionsVisibility = {
+  hero: true,
+  hero_alternative: false,
+  work_comparison: false,
+  sidekick_capabilities: false,
+  sidekick: true,
+  departments: true,
+  ai_platform: true,
+};
+
+const defaultHeroSettings: HeroSettings = {
+  logo_url: '',
+  platform_label: 'AI Work Platform',
+  headline_text: 'Empowering every team ',
+  headline_gradient_text: 'to accelerate business impact',
+  font_size: 'large',
+  background_type: 'gradient',
+  background_color: '#000000',
+  background_gradient_from: '#000000',
+  background_gradient_to: '#1a1a2e',
+  background_image_url: '',
+};
+
+const defaultSolutionTabsVisibility: SolutionTabsVisibility = {
+  overview: true,
+  inAction: true,
+  businessValue: true,
+  test: true,
+};
+
+// Hook for fetching site settings
+export function useSiteSettings() {
+  const [settings, setSettings] = useState<SiteSettings>({
+    hero_title: 'What would you like to achieve?',
+    hero_subtitle: 'with AI-powered products, AI work capabilities, and a unified context-aware layer',
+    sections_visibility: defaultSectionsVisibility,
+    hero_settings: defaultHeroSettings,
+    solution_tabs_visibility: defaultSolutionTabsVisibility,
+    sidekick_hero_theme: null,
+    sidekick_inaction_theme: null,
+  });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchSettings = useCallback(async () => {
+    try {
+      const { data, error: fetchError } = await supabase
+        .from('site_settings')
+        .select('*')
+        .single();
+
+      if (fetchError) {
+        // If no row exists or other error, just use defaults
+        console.log('Site settings fetch error (using defaults):', fetchError.message);
+        setError(fetchError.message);
+        setLoading(false);
+        return;
+      }
+
+      if (data) {
+        setSettings({
+          hero_title: data.hero_title || 'What would you like to achieve?',
+          hero_subtitle: data.hero_subtitle || 'with AI-powered products, AI work capabilities, and a unified context-aware layer',
+          sections_visibility: { ...defaultSectionsVisibility, ...data.sections_visibility },
+          hero_settings: { ...defaultHeroSettings, ...data.hero_settings },
+          solution_tabs_visibility: data.solution_tabs_visibility || defaultSolutionTabsVisibility,
+          sidekick_hero_theme: data.sidekick_hero_theme || null,
+          sidekick_inaction_theme: data.sidekick_inaction_theme || null,
+        });
+      }
+    } catch (err: any) {
+      console.log('No site settings found, using defaults:', err.message);
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchSettings();
+  }, [fetchSettings]);
+
+  return { settings, loading, error, refetch: fetchSettings };
+}
+
 // Hook for image upload
 export function useImageUpload() {
   const [uploading, setUploading] = useState(false);
@@ -243,12 +402,12 @@ export function useImageUpload() {
       const fileName = `${folder}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
 
       const { error: uploadError } = await supabase.storage
-        .from('images')
+        .from('Vibe')
         .upload(fileName, file);
 
       if (uploadError) throw uploadError;
 
-      const { data } = supabase.storage.from('images').getPublicUrl(fileName);
+      const { data } = supabase.storage.from('Vibe').getPublicUrl(fileName);
       return data.publicUrl;
     } catch (err: any) {
       setError(err.message);

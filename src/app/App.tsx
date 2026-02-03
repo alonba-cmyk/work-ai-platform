@@ -55,7 +55,10 @@ import {
 } from 'lucide-react';
 
 // Import Supabase hooks for live data
-import { useDepartments, useDepartmentData } from '@/hooks/useSupabase';
+import { useDepartments, useDepartmentData, useSiteSettings } from '@/hooks/useSupabase';
+
+// Import Business Values context
+import { useBusinessValues, getIconComponent as getBusinessValueIcon, Department as BusinessDepartment } from '@/contexts/BusinessValuesContext';
 
 // Import avatar images from Figma
 import imgAvatar1 from '@/assets/a8016eb62d3e284810c5691fa950de5343f7d776.png';
@@ -108,6 +111,13 @@ import { ConnectionFlow } from '@/app/components/ConnectionFlow';
 import { TopNavigationSelector } from '@/app/components/TopNavigationSelector';
 import { DepartmentSidebar } from '@/app/components/DepartmentSidebar';
 import { CustomPromptInput } from '@/app/components/CustomPromptInput';
+import { BeforeAfterBoardSection } from '@/app/components/BeforeAfterBoardSection';
+import { HeroAlternative } from '@/app/components/HeroAlternative';
+import { WorkComparisonSection } from '@/app/components/WorkComparisonSection';
+import { SidekickCapabilitiesSection } from '@/app/components/SidekickCapabilitiesSection';
+
+// Import SidekickThemeProvider for sidekick theming
+import { SidekickThemeProvider, SidekickPanelTheme } from '@/contexts/SidekickThemeContext';
 
 // Additional items data is now loaded from Supabase
 
@@ -146,6 +156,7 @@ interface Solution {
     value: string;
     replacesTools: string[];
     image?: string;
+    url?: string;  // Link to Vibe product page
   }>;
   values: Array<{
     icon: any;
@@ -249,11 +260,37 @@ const departmentSolutions: Record<Department, Solution> = {
       }
     ],
     vibeApps: [
-      { name: 'Social media calendar', icon: CalendarCheck, value: 'Schedule and post content across social media platforms', replacesTools: ['Hootsuite', 'Buffer', 'Sprout Social'], image: socialMediaCalendarImage },
-      { name: 'Customer segmentation app', icon: UsersRound, value: 'Segment and target customers effectively', replacesTools: ['HubSpot Marketing Hub', 'Marketo', 'Pardot'], image: customerSegmentationImage },
-      { name: 'Email Marketing Automation', icon: Send, value: 'Automate email campaigns and nurture leads', replacesTools: ['HubSpot Marketing Hub', 'Marketo', 'Pardot'] },
-      { name: 'Content Calendar Management', icon: FileText, value: 'Organize and schedule content for all channels', replacesTools: ['CoSchedule', 'Trello', 'Asana'] },
-      { name: 'Build your own', icon: Sparkles, value: 'Create custom marketing apps with just a prompt', replacesTools: [] }
+      { 
+        name: 'Campaign health tracker', 
+        icon: BarChart, 
+        value: 'Analyze real-time marketing campaign performance and ROI',
+        image: 'https://dapulse-res.cloudinary.com/image/upload/f_auto,q_auto/Generator_featured%20images/Monday%20Vibe/Campaign_health_tracker.svg',
+        url: 'https://monday.com/vibe',
+        replacesTools: ['Google Analytics', 'HubSpot'] 
+      },
+      { 
+        name: 'Social media content calendar', 
+        icon: CalendarCheck, 
+        value: 'Plan, create, and schedule social media content effortlessly',
+        image: 'https://dapulse-res.cloudinary.com/image/upload/f_auto,q_auto/Generator_featured%20images/Monday%20Vibe/Social_media_content_calendar.svg',
+        url: 'https://monday.com/vibe',
+        replacesTools: ['Hootsuite', 'Buffer', 'Sprout Social'] 
+      },
+      { 
+        name: 'Customer segmentation app', 
+        icon: UsersRound, 
+        value: 'Automatically segment customers based on behavior and demographics',
+        image: 'https://dapulse-res.cloudinary.com/image/upload/f_auto,q_auto/Generator_featured%20images/Monday%20Vibe/Customer_segmentation_app.svg',
+        url: 'https://monday.com/vibe',
+        replacesTools: ['HubSpot', 'Marketo', 'Segment'] 
+      },
+      { 
+        name: 'Build your own', 
+        icon: Sparkles, 
+        value: 'Create custom marketing apps with just a prompt',
+        url: 'https://monday.com/vibe',
+        replacesTools: [] 
+      }
     ],
     values: [
       { 
@@ -346,9 +383,45 @@ const departmentSolutions: Record<Department, Solution> = {
       }
     ],
     vibeApps: [
-      { name: 'Lead Scoring', icon: TrendingUpDown, value: 'Automatically prioritize leads based on conversion likelihood', replacesTools: ['Salesforce Pardot', 'HubSpot CRM', 'Drift'] },
-      { name: 'Sales Pipeline Management', icon: BarChart3, value: 'Track and manage the sales pipeline efficiently', replacesTools: ['Salesforce', 'Pipedrive', 'Close'] },
-      { name: 'Customer Interaction Tracking', icon: Phone, value: 'Capture and analyze customer interactions', replacesTools: ['Gong', 'Chorus', 'Salesforce'] }
+      { 
+        name: 'Deal flow analyzer', 
+        icon: TrendingUpDown, 
+        value: 'Visualize and optimize your deal pipeline in real-time',
+        image: 'https://dapulse-res.cloudinary.com/image/upload/f_auto,q_auto/Generator_featured%20images/Monday%20Vibe/Deal_flow_analyzer.svg',
+        url: 'https://monday.com/vibe',
+        replacesTools: ['Salesforce', 'Pipedrive', 'Close'] 
+      },
+      { 
+        name: 'Sales forecasting app', 
+        icon: BarChart3, 
+        value: 'Predict revenue and track quota attainment with AI',
+        image: 'https://dapulse-res.cloudinary.com/image/upload/f_auto,q_auto/Generator_featured%20images/Monday%20Vibe/Sales_forecasting_app.svg',
+        url: 'https://monday.com/vibe',
+        replacesTools: ['Clari', 'Gong Forecast', 'InsightSquared'] 
+      },
+      { 
+        name: 'Account portfolio tracker', 
+        icon: Briefcase, 
+        value: 'Manage and nurture your key accounts effectively',
+        image: 'https://dapulse-res.cloudinary.com/image/upload/f_auto,q_auto/Generator_featured%20images/Monday%20Vibe/Account_portfolio_tracker.svg',
+        url: 'https://monday.com/vibe',
+        replacesTools: ['Gainsight', 'ChurnZero', 'Salesforce'] 
+      },
+      { 
+        name: 'Sales commission calculator', 
+        icon: Calculator, 
+        value: 'Automate commission calculations and payouts',
+        image: 'https://dapulse-res.cloudinary.com/image/upload/f_auto,q_auto/Generator_featured%20images/Monday%20Vibe/Sales_commission_calculator.svg',
+        url: 'https://monday.com/vibe',
+        replacesTools: ['Spiff', 'CaptivateIQ', 'Xactly'] 
+      },
+      { 
+        name: 'Build your own', 
+        icon: Sparkles, 
+        value: 'Create custom sales apps with just a prompt',
+        url: 'https://monday.com/vibe',
+        replacesTools: [] 
+      }
     ],
     values: [
       { icon: TrendingUp, title: 'Accelerate Deal Velocity', description: 'Close deals faster with AI agents managing follow-ups and pipeline updates', supportedBy: ['CRM', 'Agents', 'Sidekick'] },
@@ -397,9 +470,37 @@ const departmentSolutions: Record<Department, Solution> = {
       { name: 'Identify bottlenecks', description: 'Automatically identify bottlenecks in workflows', value: 'Enhance efficiency' }
     ],
     vibeApps: [
-      { name: 'Project Management', icon: ListChecks, value: 'Plan, track, and manage projects efficiently', replacesTools: ['Asana', 'Trello', 'Basecamp'] },
-      { name: 'Workflow Automation', icon: Workflow, value: 'Automate repetitive tasks and workflows', replacesTools: ['Zapier', 'Make', 'IFTTT'] },
-      { name: 'Operational Insights', icon: LineChart, value: 'Analyze and visualize operational data', replacesTools: ['Tableau', 'Looker', 'Power BI'] }
+      { 
+        name: 'Supply chain tracker', 
+        icon: ListChecks, 
+        value: 'Monitor and optimize your supply chain in real-time',
+        image: 'https://dapulse-res.cloudinary.com/image/upload/f_auto,q_auto/Generator_featured%20images/Monday%20Vibe/Supply_chain_tracker.svg',
+        url: 'https://monday.com/vibe',
+        replacesTools: ['SAP', 'Oracle SCM', 'Kinaxis'] 
+      },
+      { 
+        name: 'OKR monitoring app', 
+        icon: Target, 
+        value: 'Track objectives and key results across the organization',
+        image: 'https://dapulse-res.cloudinary.com/image/upload/f_auto,q_auto/Generator_featured%20images/Monday%20Vibe/OKR_monitoring_app.svg',
+        url: 'https://monday.com/vibe',
+        replacesTools: ['Lattice', 'Workboard', '15Five'] 
+      },
+      { 
+        name: 'Executive overview app', 
+        icon: LineChart, 
+        value: 'Executive dashboard with KPIs and performance metrics',
+        image: 'https://dapulse-res.cloudinary.com/image/upload/f_auto,q_auto/Generator_featured%20images/Monday%20Vibe/Executive_overview_app.svg',
+        url: 'https://monday.com/vibe',
+        replacesTools: ['Tableau', 'Power BI', 'Looker'] 
+      },
+      { 
+        name: 'Build your own', 
+        icon: Sparkles, 
+        value: 'Create custom operations apps with just a prompt',
+        url: 'https://monday.com/vibe',
+        replacesTools: [] 
+      }
     ],
     values: [
       { icon: Zap, title: 'Streamlined Operations', description: 'AI agents automate routine tasks and optimize workflows across teams', supportedBy: ['WM', 'Agents', 'Sidekick'] },
@@ -448,9 +549,29 @@ const departmentSolutions: Record<Department, Solution> = {
       { name: 'Summarize customer history', description: 'Automatically summarize customer history', value: 'Improve insights' }
     ],
     vibeApps: [
-      { name: 'Ticket Management', icon: Ticket, value: 'Track and manage customer support tickets', replacesTools: ['Zendesk', 'Freshdesk', 'Salesforce Service Cloud'] },
-      { name: 'Customer Support Automation', icon: MessageSquare, value: 'Automate routine support tasks', replacesTools: ['Zendesk', 'Freshdesk', 'Salesforce Service Cloud'] },
-      { name: 'Proactive Support', icon: AlertCircle, value: 'Predict and prevent issues before customers report them', replacesTools: ['Zendesk', 'Freshdesk', 'Salesforce Service Cloud'] }
+      { 
+        name: 'Ticket Management', 
+        icon: Ticket, 
+        value: 'Track and manage customer support tickets efficiently',
+        image: 'https://dapulse-res.cloudinary.com/image/upload/f_auto,q_auto/Generator_featured%20images/Monday%20Vibe/Event_portal.svg',
+        url: 'https://monday.com/vibe',
+        replacesTools: ['Zendesk', 'Freshdesk', 'Salesforce Service Cloud'] 
+      },
+      { 
+        name: 'Customer Support Automation', 
+        icon: MessageSquare, 
+        value: 'Automate routine support tasks and responses',
+        image: 'https://dapulse-res.cloudinary.com/image/upload/f_auto,q_auto/Generator_featured%20images/Monday%20Vibe/Customer_segmentation_app.svg',
+        url: 'https://monday.com/vibe',
+        replacesTools: ['Intercom', 'Drift', 'Zendesk'] 
+      },
+      { 
+        name: 'Build your own', 
+        icon: Sparkles, 
+        value: 'Create custom support apps with just a prompt',
+        url: 'https://monday.com/vibe',
+        replacesTools: [] 
+      }
     ],
     values: [
       { icon: Users, title: 'Exceptional Service at Scale', description: 'AI agents handle tier-1 support, letting your team focus on complex issues', supportedBy: ['Service', 'Agents'] },
@@ -516,9 +637,29 @@ const departmentSolutions: Record<Department, Solution> = {
       { name: 'Summarize code reviews', description: 'Automatically summarize code reviews', value: 'Improve insights' }
     ],
     vibeApps: [
-      { name: 'Code Review Automation', icon: GitBranch, value: 'Automate code reviews and catch bugs', replacesTools: ['GitHub Actions', 'Jenkins', 'GitLab CI/CD'] },
-      { name: 'Sprint Management', icon: ListChecks, value: 'Plan and track sprints efficiently', replacesTools: ['Jira', 'Trello', 'Monday.com'] },
-      { name: 'Product Development Tools', icon: Wrench, value: 'Create custom tools and integrations', replacesTools: ['GitHub Actions', 'Jenkins', 'GitLab CI/CD'] }
+      { 
+        name: 'Time tracking app', 
+        icon: Clock, 
+        value: 'Track time spent on projects and features',
+        image: 'https://dapulse-res.cloudinary.com/image/upload/f_auto,q_auto/Generator_featured%20images/Monday%20Vibe/Time_tracking_app.svg',
+        url: 'https://monday.com/vibe',
+        replacesTools: ['Toggl', 'Harvest', 'Clockify'] 
+      },
+      { 
+        name: 'Sprint Management', 
+        icon: ListChecks, 
+        value: 'Plan and track sprints efficiently',
+        image: 'https://dapulse-res.cloudinary.com/image/upload/f_auto,q_auto/Generator_featured%20images/Monday%20Vibe/OKR_monitoring_app.svg',
+        url: 'https://monday.com/vibe',
+        replacesTools: ['Jira', 'Linear', 'Shortcut'] 
+      },
+      { 
+        name: 'Build your own', 
+        icon: Sparkles, 
+        value: 'Create custom product development apps with just a prompt',
+        url: 'https://monday.com/vibe',
+        replacesTools: [] 
+      }
     ],
     values: [
       { icon: Zap, title: 'Faster Time to Market', description: 'Ship features 2x faster with AI-powered development workflows', supportedBy: ['Dev', 'WM', 'Agents', 'Sidekick'] },
@@ -567,9 +708,29 @@ const departmentSolutions: Record<Department, Solution> = {
       { name: 'Generate compliance checklists', description: 'Automatically generate compliance checklists', value: 'Improve visibility' }
     ],
     vibeApps: [
-      { name: 'Contract Management', icon: Gavel, value: 'Manage and track legal contracts', replacesTools: ['DocuSign', 'Adobe Sign', 'Salesforce Contract Management'] },
-      { name: 'Compliance Monitoring', icon: Scale, value: 'Automatically monitor contracts and documents for compliance', replacesTools: ['DocuSign', 'Adobe Sign', 'Salesforce Contract Management'] },
-      { name: 'Legal Document Search', icon: FolderSearch, value: 'Find any clause or precedent instantly with AI-powered search', replacesTools: ['DocuSign', 'Adobe Sign', 'Salesforce Contract Management'] }
+      { 
+        name: 'Contract Management', 
+        icon: Gavel, 
+        value: 'Manage and track legal contracts efficiently',
+        image: 'https://dapulse-res.cloudinary.com/image/upload/f_auto,q_auto/Generator_featured%20images/Monday%20Vibe/Executive_overview_app.svg',
+        url: 'https://monday.com/vibe',
+        replacesTools: ['DocuSign', 'Ironclad', 'ContractPodAi'] 
+      },
+      { 
+        name: 'Compliance Monitoring', 
+        icon: Scale, 
+        value: 'Monitor compliance status and requirements',
+        image: 'https://dapulse-res.cloudinary.com/image/upload/f_auto,q_auto/Generator_featured%20images/Monday%20Vibe/OKR_monitoring_app.svg',
+        url: 'https://monday.com/vibe',
+        replacesTools: ['Drata', 'Vanta', 'OneTrust'] 
+      },
+      { 
+        name: 'Build your own', 
+        icon: Sparkles, 
+        value: 'Create custom legal apps with just a prompt',
+        url: 'https://monday.com/vibe',
+        replacesTools: [] 
+      }
     ],
     values: [
       { icon: Shield, title: 'Ensure Compliance', description: 'AI monitors contracts and documents for compliance issues automatically', supportedBy: ['WM', 'Agents'] },
@@ -618,9 +779,29 @@ const departmentSolutions: Record<Department, Solution> = {
       { name: 'Flag spending anomalies', description: 'Automatically flag spending anomalies', value: 'Enhance compliance' }
     ],
     vibeApps: [
-      { name: 'Invoice Management', icon: Receipt, value: 'Automate invoice processing and reconciliation', replacesTools: ['QuickBooks', 'Xero', 'Sage'] },
-      { name: 'Budget Tracking', icon: Wallet, value: 'Track and manage budgets efficiently', replacesTools: ['QuickBooks', 'Xero', 'Sage'] },
-      { name: 'Financial Reporting', icon: FileBarChart, value: 'Generate financial reports and forecasts', replacesTools: ['QuickBooks', 'Xero', 'Sage'] }
+      { 
+        name: 'Invoice Management', 
+        icon: Receipt, 
+        value: 'Automate invoice processing and reconciliation',
+        image: 'https://dapulse-res.cloudinary.com/image/upload/f_auto,q_auto/Generator_featured%20images/Monday%20Vibe/Sales_commission_calculator.svg',
+        url: 'https://monday.com/vibe',
+        replacesTools: ['QuickBooks', 'Bill.com', 'Tipalti'] 
+      },
+      { 
+        name: 'Budget Tracking', 
+        icon: Wallet, 
+        value: 'Track and manage budgets in real-time',
+        image: 'https://dapulse-res.cloudinary.com/image/upload/f_auto,q_auto/Generator_featured%20images/Monday%20Vibe/Executive_overview_app.svg',
+        url: 'https://monday.com/vibe',
+        replacesTools: ['Adaptive Planning', 'Anaplan', 'Planful'] 
+      },
+      { 
+        name: 'Build your own', 
+        icon: Sparkles, 
+        value: 'Create custom finance apps with just a prompt',
+        url: 'https://monday.com/vibe',
+        replacesTools: [] 
+      }
     ],
     values: [
       { icon: TrendingUp, title: 'Financial Accuracy', description: 'AI eliminates manual errors in budgeting and financial reporting', supportedBy: ['WM', 'Agents'] },
@@ -669,9 +850,37 @@ const departmentSolutions: Record<Department, Solution> = {
       { name: 'Create onboarding checklists', description: 'Automatically create onboarding checklists', value: 'Improve visibility' }
     ],
     vibeApps: [
-      { name: 'Recruitment Automation', icon: UserSearch, value: 'Automate the recruitment process', replacesTools: ['Greenhouse', 'Workday', 'LinkedIn Recruiter'] },
-      { name: 'Onboarding Management', icon: ClipboardCheck, value: 'Manage new hire onboarding efficiently', replacesTools: ['Greenhouse', 'Workday', 'LinkedIn Recruiter'] },
-      { name: 'Employee Lifecycle Tracking', icon: IdCard, value: 'Track the entire employee journey', replacesTools: ['Greenhouse', 'Workday', 'LinkedIn Recruiter'] }
+      { 
+        name: 'Organizational chart', 
+        icon: UsersRound, 
+        value: 'Visualize your company structure and reporting lines',
+        image: 'https://dapulse-res.cloudinary.com/image/upload/f_auto,q_auto/Generator_featured%20images/Monday%20Vibe/Organizational_chart.svg',
+        url: 'https://monday.com/vibe',
+        replacesTools: ['Lucidchart', 'Pingboard', 'ChartHop'] 
+      },
+      { 
+        name: 'Employee resource portal', 
+        icon: IdCard, 
+        value: 'Centralized hub for employee information and resources',
+        image: 'https://dapulse-res.cloudinary.com/image/upload/f_auto,q_auto/Generator_featured%20images/Monday%20Vibe/Employee_resource_portal.svg',
+        url: 'https://monday.com/vibe',
+        replacesTools: ['Confluence', 'Notion', 'SharePoint'] 
+      },
+      { 
+        name: 'Onboarding Management', 
+        icon: ClipboardCheck, 
+        value: 'Streamline new hire onboarding experience',
+        image: 'https://dapulse-res.cloudinary.com/image/upload/f_auto,q_auto/Generator_featured%20images/Monday%20Vibe/Event_portal.svg',
+        url: 'https://monday.com/vibe',
+        replacesTools: ['BambooHR', 'Rippling', 'Gusto'] 
+      },
+      { 
+        name: 'Build your own', 
+        icon: Sparkles, 
+        value: 'Create custom HR apps with just a prompt',
+        url: 'https://monday.com/vibe',
+        replacesTools: [] 
+      }
     ],
     values: [
       { icon: Users, title: 'Better Candidate Experience', description: 'AI agents provide personalized communication throughout the hiring process', supportedBy: ['WM', 'Agents', 'Sidekick'] },
@@ -1022,6 +1231,12 @@ export default function App() {
   // Fetch departments from Supabase
   const { departments: supabaseDepartments, loading: departmentsLoading } = useDepartments();
   
+  // Fetch site settings from Supabase
+  const { settings: siteSettings, loading: siteSettingsLoading } = useSiteSettings();
+  
+  // Get business values from context
+  const { getValuesForDepartment } = useBusinessValues();
+  
   // Fetch department content when a department is selected
   const { 
     products: supabaseProducts, 
@@ -1136,151 +1351,247 @@ export default function App() {
     }
   };
 
+  // Get hero font size based on settings
+  const getHeroFontSize = () => {
+    const sizes = {
+      small: 'clamp(1.25rem, 3vw, 2rem)',
+      medium: 'clamp(1.5rem, 4vw, 2.75rem)',
+      large: 'clamp(1.875rem, 5vw, 3.75rem)',
+      xlarge: 'clamp(2.25rem, 6vw, 4.5rem)',
+    };
+    return sizes[siteSettings.hero_settings.font_size] || sizes.large;
+  };
+
+  // Get hero background style
+  const getHeroBackground = () => {
+    // While loading, use a neutral black background to prevent flash
+    if (siteSettingsLoading) {
+      return { background: '#000000' };
+    }
+    
+    const { hero_settings } = siteSettings;
+    if (hero_settings.background_type === 'solid') {
+      return { background: hero_settings.background_color };
+    }
+    if (hero_settings.background_type === 'gradient') {
+      return {
+        background: `linear-gradient(to bottom, ${hero_settings.background_gradient_from}, ${hero_settings.background_gradient_to})`,
+      };
+    }
+    if (hero_settings.background_type === 'image' && hero_settings.background_image_url) {
+      return {
+        backgroundImage: `url(${hero_settings.background_image_url})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+      };
+    }
+    return { background: '#000000' };
+  };
+
+  // Show loading screen while site settings are being fetched
+  // This prevents the "flash" of default values before Supabase data loads
+  if (siteSettingsLoading) {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="w-8 h-8 text-indigo-500 animate-spin" />
+          <span className="text-gray-400 text-sm">Loading...</span>
+        </div>
+      </div>
+    );
+  }
+
   return (
+    <SidekickThemeProvider
+      initialHeroTheme={siteSettings.sidekick_hero_theme as SidekickPanelTheme | null}
+      initialInActionTheme={siteSettings.sidekick_inaction_theme as SidekickPanelTheme | null}
+    >
     <div className="min-h-screen bg-background text-foreground">
       {/* Hero Section */}
-      <section className="relative min-h-screen flex flex-col items-center justify-center px-6 py-20">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8 }}
-          className="text-center max-w-5xl mx-auto"
+      {siteSettings.sections_visibility.hero && (
+        <section 
+          className="relative min-h-screen flex flex-col items-center justify-center px-6 py-20"
+          style={getHeroBackground()}
         >
-          {/* Monday.com Logo */}
-          <HeroLogo />
-          
-          {/* AI Work Platform Label */}
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.3, duration: 0.8 }}
-            className="text-sm md:text-base tracking-[0.2em] uppercase text-muted-foreground/80 mb-8"
-          >
-            AI Work Platform
-          </motion.p>
-          
-          {/* Main Headline */}
-          <motion.p
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5, duration: 0.8 }}
-            className="mb-6 leading-tight"
-            style={{ fontSize: 'clamp(1.875rem, 5vw, 3.75rem)' }}
-          >
-            <span className="text-foreground/80">Empowering every team </span>
-            <span className="bg-gradient-to-r from-[#eaecd8] via-[#c7ede0] to-[#6161ff] bg-clip-text text-transparent">
-              to accelerate business impact
-            </span>
-          </motion.p>
-          
-          {/* Subtitle */}
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.7, duration: 0.8 }}
-            className="text-base md:text-lg mb-12 text-muted-foreground/70 max-w-3xl mx-auto"
-          >
-            with AI-powered products, AI work capabilities, and a unified context-aware layer
-          </motion.p>
-          
-          {/* Scroll indicator */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.9, duration: 0.6 }}
-            className="flex flex-col items-center gap-3 mt-12"
+            transition={{ duration: 0.8 }}
+            className="text-center max-w-5xl mx-auto"
           >
-            <motion.p 
-              className="text-sm text-white/60"
-              style={{ fontWeight: 'var(--font-weight-medium)' }}
-              animate={{ opacity: [0.6, 1, 0.6] }}
-              transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+            {/* Monday.com Logo */}
+            <HeroLogo customLogoUrl={siteSettings.hero_settings.logo_url} />
+            
+            {/* AI Work Platform Label */}
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.3, duration: 0.8 }}
+              className="text-sm md:text-base tracking-[0.2em] uppercase text-muted-foreground/80 mb-8"
             >
-              Scroll to explore your solution
+              {siteSettings.hero_settings.platform_label || 'AI Work Platform'}
             </motion.p>
-            <motion.div
-              animate={{ y: [0, 8, 0] }}
-              transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
+            
+            {/* Main Headline */}
+            <motion.p
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5, duration: 0.8 }}
+              className="mb-6 leading-tight"
+              style={{ fontSize: getHeroFontSize() }}
             >
-              <ChevronDown className="w-5 h-5 text-white/60" />
+              <span className="text-foreground/80">{siteSettings.hero_settings.headline_text || 'Empowering every team '}</span>
+              <span className="bg-gradient-to-r from-[#eaecd8] via-[#c7ede0] to-[#6161ff] bg-clip-text text-transparent">
+                {siteSettings.hero_settings.headline_gradient_text || 'to accelerate business impact'}
+              </span>
+            </motion.p>
+            
+            {/* Subtitle */}
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.7, duration: 0.8 }}
+              className="text-base md:text-lg mb-12 text-muted-foreground/70 max-w-3xl mx-auto"
+            >
+              {siteSettings.hero_subtitle || 'with AI-powered products, AI work capabilities, and a unified context-aware layer'}
+            </motion.p>
+            
+            {/* Scroll indicator */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.9, duration: 0.6 }}
+              className="flex flex-col items-center gap-3 mt-12"
+            >
+              <motion.p 
+                className="text-sm text-white/60"
+                style={{ fontWeight: 'var(--font-weight-medium)' }}
+                animate={{ opacity: [0.6, 1, 0.6] }}
+                transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+              >
+                Scroll to explore your solution
+              </motion.p>
+              <motion.div
+                animate={{ y: [0, 8, 0] }}
+                transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
+              >
+                <ChevronDown className="w-5 h-5 text-white/60" />
+              </motion.div>
             </motion.div>
           </motion.div>
-        </motion.div>
 
-        {/* Background gradient blur */}
-        <div className="absolute inset-0 -z-10 overflow-hidden">
-          <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/20 rounded-full blur-[120px]" />
-          <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-accent/20 rounded-full blur-[120px]" />
-        </div>
-      </section>
+          {/* Background gradient blur */}
+          <div className="absolute inset-0 -z-10 overflow-hidden">
+            <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/20 rounded-full blur-[120px]" />
+            <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-accent/20 rounded-full blur-[120px]" />
+          </div>
+        </section>
+      )}
 
-      {/* Top Navigation Selector Section */}
-      <section
-        id="selector-section"
-        className="py-20"
-        style={{ background: '#000000' }}
-      >
-        <TopNavigationSelector
-          departments={getDisplayList()}
-          selectedDepartment={selectedDepartment}
-          onDepartmentSelect={handleDepartmentSelect}
-          selectionMode={selectionMode}
-          onSelectionModeChange={setSelectionMode}
+      {/* Hero Alternative Section (White background with typing effect) */}
+      {siteSettings.sections_visibility.hero_alternative && (
+        <HeroAlternative />
+      )}
+
+      {/* Work Comparison Section (Black/White split) */}
+      {siteSettings.sections_visibility.work_comparison && (
+        <WorkComparisonSection agents={mappedAgents} />
+      )}
+
+      {/* Sidekick (Half story) Section */}
+      {siteSettings.sections_visibility.sidekick_capabilities && (
+        <SidekickCapabilitiesSection />
+      )}
+
+      {/* Sidekick (Full story) Section */}
+      {siteSettings.sections_visibility.sidekick && (
+        <BeforeAfterBoardSection
+          onExplore={() => {
+            const selectorSection = document.getElementById('selector-section');
+            selectorSection?.scrollIntoView({ behavior: 'smooth' });
+          }}
         />
-      </section>
+      )}
 
-      {/* Solution Section - Only visible after selection */}
-      <AnimatePresence>
-        {showSolution && selectedDepartment && (
-          <motion.section
-            id="solution-section"
-            initial={{ opacity: 0, y: 50 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 50 }}
-            transition={{ duration: 0.6 }}
-            className="py-24 px-4 lg:px-6"
-            style={{ background: '#000000' }}
-          >
-            <div className="max-w-[1800px] mx-auto relative">
-              {/* Department Sidebar - positioned relative to container */}
-              <DepartmentSidebar
-                departments={getDisplayList()}
-                selectedDepartment={selectedDepartment}
-                onSelectDepartment={handleDepartmentSelect}
-                selectionMode={selectionMode}
-              />
-              
-              {/* AI Work Platform Visualization - Full Width with Header Inside */}
-              {contentLoading ? (
-                <div className="flex items-center justify-center py-20">
-                  <Loader2 className="w-8 h-8 text-primary animate-spin" />
-                  <span className="ml-3 text-muted-foreground">Loading content...</span>
-                </div>
-              ) : (
-                <SolutionDisplay
-                  department={selectedDepartment}
-                  products={mappedProducts}
-                  capabilities={mappedSidekickActions}
-                  agents={mappedAgents}
-                  vibeApps={mappedVibeApps}
-                  values={departmentSolutions[selectedDepartment]?.values || []}
-                  availableAgents={mappedAgents}
-                  availableVibeApps={mappedVibeApps}
-                  availableSidekickActions={mappedSidekickActions}
-                  availableProducts={mappedProducts}
-                  selectedDepartmentInfo={getDisplayList().find(d => d.id === selectedDepartment)}
-                  onChangeSelection={() => {
-                    document.getElementById('selector-section')?.scrollIntoView({ 
-                      behavior: 'smooth',
-                      block: 'center'
-                    });
-                  }}
+      {/* Top Navigation Selector Section (Departments) */}
+      {siteSettings.sections_visibility.departments && (
+        <section
+          id="selector-section"
+          className="py-20"
+          style={{ background: '#000000' }}
+        >
+          <TopNavigationSelector
+            departments={getDisplayList()}
+            selectedDepartment={selectedDepartment}
+            onDepartmentSelect={handleDepartmentSelect}
+            selectionMode={selectionMode}
+            onSelectionModeChange={setSelectionMode}
+          />
+        </section>
+      )}
+
+      {/* Solution Section - AI Work Platform - Only visible after selection */}
+      {siteSettings.sections_visibility.ai_platform && (
+        <AnimatePresence>
+          {showSolution && selectedDepartment && (
+            <motion.section
+              id="solution-section"
+              initial={{ opacity: 0, y: 50 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 50 }}
+              transition={{ duration: 0.6 }}
+              className="py-24 px-4 lg:px-6"
+              style={{ background: '#000000' }}
+            >
+              <div className="max-w-[1800px] mx-auto relative">
+                {/* Department Sidebar - positioned relative to container */}
+                <DepartmentSidebar
+                  departments={getDisplayList()}
+                  selectedDepartment={selectedDepartment}
+                  onSelectDepartment={handleDepartmentSelect}
+                  selectionMode={selectionMode}
                 />
-              )}
-            </div>
-          </motion.section>
-        )}
-      </AnimatePresence>
+                
+                {/* AI Work Platform Visualization - Full Width with Header Inside */}
+                {contentLoading ? (
+                  <div className="flex items-center justify-center py-20">
+                    <Loader2 className="w-8 h-8 text-primary animate-spin" />
+                    <span className="ml-3 text-muted-foreground">Loading content...</span>
+                  </div>
+                ) : (
+                  <SolutionDisplay
+                    department={selectedDepartment}
+                    products={mappedProducts}
+                    capabilities={mappedSidekickActions}
+                    agents={mappedAgents}
+                    vibeApps={mappedVibeApps}
+                    values={getValuesForDepartment(selectedDepartment as BusinessDepartment).map(v => ({
+                      icon: getBusinessValueIcon(v.iconName),
+                      title: v.title,
+                      description: v.description,
+                      supportedBy: v.supportedBy,
+                      replacesTools: v.replacesTools,
+                    }))}
+                    availableAgents={mappedAgents}
+                    availableVibeApps={mappedVibeApps}
+                    availableSidekickActions={mappedSidekickActions}
+                    availableProducts={mappedProducts}
+                    selectedDepartmentInfo={getDisplayList().find(d => d.id === selectedDepartment)}
+                    solutionTabsVisibility={siteSettings.solution_tabs_visibility}
+                    onChangeSelection={() => {
+                      document.getElementById('selector-section')?.scrollIntoView({ 
+                        behavior: 'smooth',
+                        block: 'center'
+                      });
+                    }}
+                  />
+                )}
+              </div>
+            </motion.section>
+          )}
+        </AnimatePresence>
+      )}
     </div>
+    </SidekickThemeProvider>
   );
 }

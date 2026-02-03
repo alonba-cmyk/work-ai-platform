@@ -4,13 +4,16 @@ import { AgentModal } from './AgentModal';
 import { VibeAppModal } from './VibeAppModal';
 import { PlatformValuesBar } from './PlatformValuesBar';
 import { InActionView } from './InActionView';
+import { WorkflowsSection } from './WorkflowsSection';
+import { AgentsSection } from './AgentsSection';
 
 import { motion, AnimatePresence } from 'motion/react';
-import { Box, Cpu, Zap, Plus, ChevronLeft, ChevronRight, TrendingUp, ChevronsLeft, ChevronsRight, LayoutGrid, Play } from 'lucide-react';
-import { useState, isValidElement, cloneElement } from 'react';
+import { Box, Cpu, Zap, Plus, ChevronLeft, ChevronRight, TrendingUp, ChevronsLeft, ChevronsRight, LayoutGrid, Play, FlaskConical, Rocket, ArrowRight, Clock, Target, Sparkles } from 'lucide-react';
+import { useState, useEffect, isValidElement, cloneElement } from 'react';
 import sidekickLogo from '@/assets/1babfe88a809998ec3c5c5d597d8051ef7639a6f.png';
 import agentsLogo from '@/assets/99be461a455ae49743d963276e2023ed6cd1445d.png';
 import vibeLogo from '@/assets/069a22575b2de9057cfc00d9b4538d072f7fe115.png';
+import { useVibeTheme } from '@/contexts/VibeThemeContext';
 
 // Department-specific platform titles
 const platformTitles: Record<string, { main: string; subtitle: string }> = {
@@ -208,6 +211,7 @@ interface VibeCarouselCardProps {
     image?: string;
     icon?: any;
     replacesTools?: string[];
+    url?: string;
   };
   index: number;
   onClick: () => void;
@@ -215,6 +219,7 @@ interface VibeCarouselCardProps {
 
 function VibeCarouselCard({ app, index, onClick }: VibeCarouselCardProps) {
   const [isHovered, setIsHovered] = useState(false);
+  const { theme } = useVibeTheme();
   
   return (
     <motion.button
@@ -228,9 +233,9 @@ function VibeCarouselCard({ app, index, onClick }: VibeCarouselCardProps) {
       onHoverEnd={() => setIsHovered(false)}
       className="w-full h-full rounded-[var(--radius-card)] border overflow-hidden relative cursor-pointer"
       style={{
-        background: 'rgba(255, 255, 255, 0.02)',
-        borderColor: 'rgba(99, 102, 241, 0.2)',
-        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.3)',
+        background: theme.cardBackground,
+        borderColor: theme.cardBorder,
+        boxShadow: theme.cardShadow,
       }}
     >
       {app?.image ? (
@@ -250,36 +255,37 @@ function VibeCarouselCard({ app, index, onClick }: VibeCarouselCardProps) {
             }}
           />
           
-          {/* App info bar at bottom - NOW REBUILT */}
+          {/* App info bar at bottom */}
           <div 
             className="absolute bottom-0 left-0 right-0 px-4 py-3"
             style={{
-              background: 'rgba(0, 0, 0, 0.8)',
+              background: theme.infoBarBackground,
               backdropFilter: 'blur(12px)',
-              borderTop: '1px solid rgba(255, 255, 255, 0.1)',
+              borderTop: `1px solid ${theme.infoBarBorder}`,
             }}
           >
             <div className="flex items-center gap-3">
-              {/* App Icon - REBUILT SIMPLE VERSION */}
+              {/* App Icon */}
               <div 
                 className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
                 style={{
-                  background: 'linear-gradient(135deg, rgba(255, 165, 0, 0.35), rgba(233, 30, 99, 0.25))',
+                  background: `linear-gradient(135deg, ${theme.iconGradientFrom}, ${theme.iconGradientTo})`,
                 }}
               >
                 {app.icon ? (
-                  <app.icon className="w-6 h-6" style={{ color: '#ff6384' }} />
+                  <app.icon className="w-6 h-6" style={{ color: theme.iconColor }} />
                 ) : (
-                  <Zap className="w-6 h-6" style={{ color: '#ff6384' }} />
+                  <Zap className="w-6 h-6" style={{ color: theme.iconColor }} />
                 )}
               </div>
               
               {/* Text content */}
               <div className="flex-1 min-w-0">
                 <h4 
-                  className="text-base text-white leading-tight mb-1 text-left"
+                  className="text-base leading-tight mb-1 text-left"
                   style={{ 
                     fontWeight: 'var(--font-weight-bold)',
+                    color: theme.titleColor,
                   }}
                 >
                   {app.name}
@@ -289,7 +295,7 @@ function VibeCarouselCard({ app, index, onClick }: VibeCarouselCardProps) {
                   className="text-xs leading-tight text-left"
                   style={{ 
                     fontWeight: 'var(--font-weight-medium)',
-                    color: '#ffb3c6',
+                    color: theme.subtitleColor,
                   }}
                 >
                   {app.value}
@@ -298,23 +304,24 @@ function VibeCarouselCard({ app, index, onClick }: VibeCarouselCardProps) {
             </div>
           </div>
           
-          {/* View App Hover Overlay */}
+          {/* View App Hover Overlay - Uses theme gradient */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: isHovered ? 1 : 0 }}
-            transition={{ duration: 0.2 }}
-            className="absolute inset-0 flex items-center justify-center"
+            transition={{ duration: 0.25 }}
+            className="absolute inset-0 flex flex-col items-center justify-center gap-2"
             style={{
-              background: 'linear-gradient(135deg, rgba(255, 165, 0, 0.9), rgba(233, 30, 99, 0.85))',
-              backdropFilter: 'blur(4px)',
+              background: `linear-gradient(135deg, ${theme.hoverGradientFrom}, ${theme.hoverGradientTo})`,
+              backdropFilter: 'blur(6px)',
             }}
           >
             <span 
               className="text-xl text-white"
               style={{ fontWeight: 'var(--font-weight-bold)' }}
             >
-              View app
+              Open in Vibe
             </span>
+            <span className="text-white/80 text-sm">Click to explore</span>
           </motion.div>
         </>
       ) : (
@@ -322,12 +329,13 @@ function VibeCarouselCard({ app, index, onClick }: VibeCarouselCardProps) {
           {/* Check if this is "Build your own" */}
           {app?.name === 'Build your own' ? (
             <>
-              {/* Special "Build your own" design */}
+              {/* Special "Build your own" design with theme gradient */}
               {/* Gradient border effect */}
               <div 
                 className="absolute inset-0 rounded-[var(--radius-card)]"
                 style={{
-                  background: 'linear-gradient(135deg, rgba(22, 112, 253, 0.2), rgba(255, 131, 224, 0.2), rgba(55, 233, 200, 0.2), rgba(255, 201, 3, 0.2), rgba(255, 110, 46, 0.2))',
+                  background: theme.buildYourOwnGradient.replace('linear-gradient', 'linear-gradient').replace(/,/g, ', ').replace('  ', ' '),
+                  opacity: 0.2,
                   padding: '2px',
                   WebkitMask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
                   WebkitMaskComposite: 'xor',
@@ -340,7 +348,7 @@ function VibeCarouselCard({ app, index, onClick }: VibeCarouselCardProps) {
                 <div 
                   className="w-16 h-16 rounded-2xl flex items-center justify-center relative"
                   style={{
-                    background: 'linear-gradient(135deg, #1670FD, #FF83E0, #37E9C8, #FFC903, #FF6E2E)',
+                    background: theme.buildYourOwnGradient,
                     boxShadow: '0 8px 24px rgba(255, 131, 224, 0.3)',
                   }}
                 >
@@ -358,7 +366,7 @@ function VibeCarouselCard({ app, index, onClick }: VibeCarouselCardProps) {
                 className="text-lg text-center leading-tight mb-2"
                 style={{ 
                   fontWeight: 'var(--font-weight-bold)',
-                  backgroundImage: 'linear-gradient(135deg, #1670FD, #FF83E0, #37E9C8, #FFC903, #FF6E2E)',
+                  backgroundImage: theme.buildYourOwnGradient,
                   WebkitBackgroundClip: 'text',
                   WebkitTextFillColor: 'transparent',
                 }}
@@ -373,14 +381,14 @@ function VibeCarouselCard({ app, index, onClick }: VibeCarouselCardProps) {
                 {app?.value}
               </p>
               
-              {/* Hover overlay with gradient */}
+              {/* Hover overlay with theme gradient */}
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: isHovered ? 1 : 0 }}
                 transition={{ duration: 0.2 }}
                 className="absolute inset-0 flex items-center justify-center rounded-[var(--radius-card)]"
                 style={{
-                  background: 'linear-gradient(135deg, rgba(22, 112, 253, 0.95), rgba(255, 131, 224, 0.95))',
+                  background: `linear-gradient(135deg, ${theme.hoverGradientFrom}, ${theme.hoverGradientTo})`,
                   backdropFilter: 'blur(4px)',
                 }}
               >
@@ -503,7 +511,7 @@ export function IsometricCard({
     <motion.div
       initial={{ opacity: 0, scale: 0.8, y: 20 }}
       animate={{ opacity: 1, scale: 1, y: 0 }}
-      whileHover={{ scale: 1.05, y: -3 }}
+      whileHover={{ scale: 1.08, y: -8 }}
       transition={{ delay, duration: 0.5, type: 'spring', stiffness: 100 }}
       className="cursor-pointer w-full"
       onHoverStart={() => setIsHovered(true)}
@@ -511,11 +519,13 @@ export function IsometricCard({
       onClick={onClick}
     >
       <div 
-        className="relative h-full rounded-[var(--radius-card)] border backdrop-blur-xl overflow-hidden"
+        className="relative h-full rounded-[var(--radius-card)] border backdrop-blur-xl overflow-hidden transition-all duration-300"
         style={{
           background: styling.bgGradient,
-          borderColor: styling.borderColor,
-          boxShadow: '0 2px 8px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.05)',
+          borderColor: isHovered ? 'rgba(99, 102, 241, 0.5)' : styling.borderColor,
+          boxShadow: isHovered 
+            ? '0 16px 40px rgba(99, 102, 241, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.1)'
+            : '0 2px 8px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.05)',
           minHeight: (type === 'agent' || type === 'vibe') && image ? '240px' : '160px'
         }}
       >
@@ -544,10 +554,10 @@ export function IsometricCard({
               <img 
                 src={image} 
                 alt={title} 
-                className="w-full h-full object-cover"
+                className="w-full h-full object-cover transition-transform duration-500 ease-out"
                 style={{ 
                   objectPosition: 'center',
-                  transform: 'scale(1.3)',
+                  transform: isHovered ? 'scale(1.45)' : 'scale(1.3)',
                 }}
               />
               
@@ -792,6 +802,7 @@ interface IsometricPlatformVisualizationProps {
   agents: Array<{ name: string; image?: string; value?: string }>;
   sidekickActions: Array<{ name: string; description: string; value: string }>;
   vibeApps: Array<{ name: string; icon?: React.ReactNode; image?: string; value?: string; replacesTools?: string[] }>;
+  values?: Array<{ icon: any; title: string; description: string; supportedBy: string[]; replacesTools?: string[] }>;
   onAddProduct?: (productName: string) => void;
   onAddAgent?: (agentName: string) => void;
   onAddSidekickAction?: (actionName: string) => void;
@@ -809,6 +820,13 @@ interface IsometricPlatformVisualizationProps {
   originalSidekickActionNames?: string[];
   originalVibeAppNames?: string[];
   onViewImpact?: () => void;
+  // Solution tabs visibility settings
+  solutionTabsVisibility?: {
+    overview: boolean;
+    inAction: boolean;
+    businessValue: boolean;
+    test: boolean;
+  };
   // Header info
   selectedDepartmentInfo?: {
     title: string;
@@ -825,6 +843,7 @@ export function IsometricPlatformVisualization({
   agents,
   sidekickActions,
   vibeApps,
+  values = [],
   onAddProduct,
   onAddAgent,
   onAddSidekickAction,
@@ -842,6 +861,7 @@ export function IsometricPlatformVisualization({
   originalSidekickActionNames = [],
   originalVibeAppNames = [],
   onViewImpact,
+  solutionTabsVisibility = { overview: true, inAction: true, businessValue: true, test: true },
   selectedDepartmentInfo,
   onChangeSelection
 }: IsometricPlatformVisualizationProps) {
@@ -853,8 +873,35 @@ export function IsometricPlatformVisualization({
     type: null
   });
   
-  // View mode toggle: 'overview' (current) or 'in-action' (demo view)
-  const [viewMode, setViewMode] = useState<'overview' | 'in-action'>('overview');
+  // View mode toggle: 'overview', 'in-action', 'business-value', or 'test'
+  const [viewMode, setViewMode] = useState<'overview' | 'in-action' | 'business-value' | 'test'>(() => {
+    // Initialize to first visible tab
+    if (solutionTabsVisibility.overview) return 'overview';
+    if (solutionTabsVisibility.inAction) return 'in-action';
+    if (solutionTabsVisibility.businessValue) return 'business-value';
+    if (solutionTabsVisibility.test) return 'test';
+    return 'overview';
+  });
+  
+  // Update viewMode if current tab becomes hidden
+  useEffect(() => {
+    const isCurrentVisible = 
+      (viewMode === 'overview' && solutionTabsVisibility.overview) ||
+      (viewMode === 'in-action' && solutionTabsVisibility.inAction) ||
+      (viewMode === 'business-value' && solutionTabsVisibility.businessValue) ||
+      (viewMode === 'test' && solutionTabsVisibility.test);
+    
+    if (!isCurrentVisible) {
+      // Switch to first visible tab
+      if (solutionTabsVisibility.overview) setViewMode('overview');
+      else if (solutionTabsVisibility.inAction) setViewMode('in-action');
+      else if (solutionTabsVisibility.businessValue) setViewMode('business-value');
+      else if (solutionTabsVisibility.test) setViewMode('test');
+    }
+  }, [solutionTabsVisibility, viewMode]);
+  
+  // Track which section is currently active (for dimming previous sections)
+  const [activeSection, setActiveSection] = useState<'inaction' | 'agents' | 'workflows'>('inaction');
   
   const [selectedProductIndex, setSelectedProductIndex] = useState<number | null>(null);
   const [currentVibeIndex, setCurrentVibeIndex] = useState(0);
@@ -1033,6 +1080,27 @@ export function IsometricPlatformVisualization({
           />
           
           <div className="relative z-10">
+            {/* Floating Business Impact Button - Top Right */}
+            <motion.button
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.5, duration: 0.4 }}
+              onClick={onViewImpact}
+              className="absolute top-4 right-4 group flex items-center gap-2 px-4 py-2 rounded-full border transition-all duration-300 hover:scale-105"
+              style={{
+                background: 'rgba(99, 102, 241, 0.1)',
+                borderColor: 'rgba(99, 102, 241, 0.3)',
+                fontWeight: 'var(--font-weight-medium)',
+                fontSize: '0.875rem',
+                zIndex: 20
+              }}
+            >
+              <TrendingUp className="w-4 h-4 text-indigo-400 group-hover:text-indigo-300 transition-colors" />
+              <span className="text-white/80 group-hover:text-white transition-colors">
+                Business Impact
+              </span>
+            </motion.button>
+            
             {/* Department Header - Centered & Elegant */}
             {selectedDepartmentInfo && (
               <div className="text-center mb-12">
@@ -1118,29 +1186,13 @@ export function IsometricPlatformVisualization({
                   )}
                 </motion.div>
                 
-                {/* Action Buttons: Business Impact + View Toggle */}
+                {/* View Mode Toggle - Centered */}
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.4, duration: 0.6 }}
-                  className="mt-6 mb-8 flex justify-center items-center gap-4"
+                  className="mt-6 mb-8 flex justify-center items-center"
                 >
-                  <button
-                    onClick={onViewImpact}
-                    className="group flex items-center gap-2 px-5 py-2.5 rounded-full border transition-all duration-300"
-                    style={{
-                      background: 'rgba(99, 102, 241, 0.08)',
-                      borderColor: 'rgba(99, 102, 241, 0.3)',
-                      fontWeight: 'var(--font-weight-medium)',
-                      fontSize: '0.9375rem'
-                    }}
-                  >
-                    <TrendingUp className="w-4 h-4 text-white/70 group-hover:text-white transition-colors" />
-                    <span className="text-white/70 group-hover:text-white transition-colors">
-                      View Business Impact
-                    </span>
-                  </button>
-                  
                   {/* View Mode Toggle */}
                   <div 
                     className="flex items-center rounded-full p-1"
@@ -1149,30 +1201,62 @@ export function IsometricPlatformVisualization({
                       border: '1px solid rgba(255, 255, 255, 0.1)'
                     }}
                   >
-                    <button
-                      onClick={() => setViewMode('overview')}
-                      className={`flex items-center gap-2 px-4 py-2 rounded-full transition-all duration-300 ${
-                        viewMode === 'overview' 
-                          ? 'bg-indigo-600 text-white' 
-                          : 'text-white/60 hover:text-white/90'
-                      }`}
-                      style={{ fontWeight: 'var(--font-weight-medium)', fontSize: '0.875rem' }}
-                    >
-                      <LayoutGrid className="w-4 h-4" />
-                      <span>Overview</span>
-                    </button>
-                    <button
-                      onClick={() => setViewMode('in-action')}
-                      className={`flex items-center gap-2 px-4 py-2 rounded-full transition-all duration-300 ${
-                        viewMode === 'in-action' 
-                          ? 'bg-gradient-to-r from-orange-500 to-pink-500 text-white' 
-                          : 'text-white/60 hover:text-white/90'
-                      }`}
-                      style={{ fontWeight: 'var(--font-weight-medium)', fontSize: '0.875rem' }}
-                    >
-                      <Play className="w-4 h-4" />
-                      <span>In Action</span>
-                    </button>
+                    {solutionTabsVisibility.overview && (
+                      <button
+                        onClick={() => setViewMode('overview')}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-full transition-all duration-300 ${
+                          viewMode === 'overview' 
+                            ? 'bg-indigo-600 text-white' 
+                            : 'text-white/60 hover:text-white/90'
+                        }`}
+                        style={{ fontWeight: 'var(--font-weight-medium)', fontSize: '0.875rem' }}
+                      >
+                        <LayoutGrid className="w-4 h-4" />
+                        <span>Overview</span>
+                      </button>
+                    )}
+                    {solutionTabsVisibility.inAction && (
+                      <button
+                        onClick={() => setViewMode('in-action')}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-full transition-all duration-300 ${
+                          viewMode === 'in-action' 
+                            ? 'bg-gradient-to-r from-orange-500 to-pink-500 text-white' 
+                            : 'text-white/60 hover:text-white/90'
+                        }`}
+                        style={{ fontWeight: 'var(--font-weight-medium)', fontSize: '0.875rem' }}
+                      >
+                        <Play className="w-4 h-4" />
+                        <span>In Action</span>
+                      </button>
+                    )}
+                    {solutionTabsVisibility.businessValue && (
+                      <button
+                        onClick={() => setViewMode('business-value')}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-full transition-all duration-300 ${
+                          viewMode === 'business-value' 
+                            ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white' 
+                            : 'text-white/60 hover:text-white/90'
+                        }`}
+                        style={{ fontWeight: 'var(--font-weight-medium)', fontSize: '0.875rem' }}
+                      >
+                        <TrendingUp className="w-4 h-4" />
+                        <span>Business Value</span>
+                      </button>
+                    )}
+                    {solutionTabsVisibility.test && (
+                      <button
+                        onClick={() => setViewMode('test')}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-full transition-all duration-300 ${
+                          viewMode === 'test' 
+                            ? 'bg-gradient-to-r from-purple-500 to-blue-500 text-white' 
+                            : 'text-white/60 hover:text-white/90'
+                        }`}
+                        style={{ fontWeight: 'var(--font-weight-medium)', fontSize: '0.875rem' }}
+                      >
+                        <FlaskConical className="w-4 h-4" />
+                        <span>Test</span>
+                      </button>
+                    )}
                   </div>
                 </motion.div>
                 
@@ -1180,17 +1264,420 @@ export function IsometricPlatformVisualization({
               </div>
             )}
             
-            {/* Conditional View: Overview or In Action */}
+            {/* Conditional View: Overview, In Action, or Business Value */}
             {viewMode === 'in-action' ? (
-              <InActionView
-                department={department}
-                products={products}
-                agents={agents}
-                vibeApps={vibeApps}
-                sidekickActions={sidekickActions}
-              />
+              <>
+                {/* InActionView with dimming when scrolled past */}
+                <motion.div
+                  animate={{ 
+                    opacity: activeSection === 'inaction' ? 1 : 0.35,
+                    filter: activeSection === 'inaction' ? 'blur(0px)' : 'blur(2px)',
+                  }}
+                  transition={{ duration: 0.5 }}
+                >
+                  <InActionView
+                    department={department}
+                    products={products}
+                    agents={agents}
+                    vibeApps={vibeApps}
+                    sidekickActions={sidekickActions}
+                  />
+                </motion.div>
+                <AgentsSection 
+                  department={department} 
+                  agents={agents}
+                  activeSection={activeSection}
+                  onSectionVisible={() => setActiveSection('agents')}
+                />
+                <WorkflowsSection 
+                  department={department} 
+                  agents={agents}
+                  onSectionVisible={() => setActiveSection('workflows')}
+                />
+              </>
+            ) : viewMode === 'business-value' ? (
+              /* Business Value View */
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                className="w-full max-w-6xl mx-auto px-8"
+              >
+                {/* Header */}
+                <div className="text-center mb-10">
+                  <motion.div 
+                    initial={{ scale: 0.8, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    className="inline-flex items-center gap-3 mb-4"
+                  >
+                    <div 
+                      className="w-12 h-12 rounded-2xl flex items-center justify-center"
+                      style={{
+                        background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.9), rgba(20, 184, 166, 0.8))',
+                        boxShadow: '0 4px 20px rgba(16, 185, 129, 0.3)',
+                      }}
+                    >
+                      <TrendingUp className="w-6 h-6 text-white" />
+                    </div>
+                    <h2 className="text-3xl text-white" style={{ fontWeight: 'var(--font-weight-bold)' }}>
+                      Business Value
+                    </h2>
+                  </motion.div>
+                  <p className="text-white/60 text-lg max-w-2xl mx-auto">
+                    Discover the impact of your AI-powered solution
+                  </p>
+                </div>
+
+                {/* Values Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {values.map((value, idx) => {
+                    const Icon = value.icon;
+                    return (
+                      <motion.div
+                        key={value.title}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: idx * 0.1 }}
+                        className="relative rounded-2xl border overflow-hidden group"
+                        style={{
+                          background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02))',
+                          borderColor: 'rgba(255, 255, 255, 0.1)',
+                          backdropFilter: 'blur(10px)',
+                        }}
+                      >
+                        {/* Gradient stripe */}
+                        <div 
+                          className="absolute left-0 top-0 bottom-0 w-1"
+                          style={{
+                            background: 'linear-gradient(180deg, rgba(16, 185, 129, 0.9), rgba(20, 184, 166, 0.9))',
+                          }}
+                        />
+                        
+                        <div className="p-6 pl-8">
+                          {/* Icon and Title */}
+                          <div className="flex items-start gap-4 mb-3">
+                            <div 
+                              className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 transition-transform group-hover:scale-110"
+                              style={{
+                                background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(20, 184, 166, 0.15))',
+                              }}
+                            >
+                              <Icon className="w-6 h-6 text-emerald-400" />
+                            </div>
+                            <div className="flex-1">
+                              <h4 
+                                className="text-lg text-white mb-2"
+                                style={{ fontWeight: 'var(--font-weight-semibold)' }}
+                              >
+                                {value.title}
+                              </h4>
+                              <p className="text-sm text-white/60 leading-relaxed">
+                                {value.description}
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* Supported By */}
+                          <div className="flex items-center gap-2 mt-4 pt-4 border-t border-white/10">
+                            <span className="text-[10px] text-white/40 uppercase tracking-wider">
+                              Powered by:
+                            </span>
+                            <div className="flex gap-1.5 flex-wrap">
+                              {value.supportedBy.map((feature) => (
+                                <span 
+                                  key={feature}
+                                  className="px-2 py-0.5 text-[10px] rounded-full"
+                                  style={{
+                                    background: 'rgba(16, 185, 129, 0.15)',
+                                    color: 'rgba(52, 211, 153, 0.9)',
+                                  }}
+                                >
+                                  {feature}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      </motion.div>
+                    );
+                  })}
+                </div>
+
+                {values.length === 0 && (
+                  <div className="text-center py-16">
+                    <p className="text-white/40 text-lg">No business values defined for this department</p>
+                  </div>
+                )}
+              </motion.div>
+            ) : viewMode === 'test' ? (
+              /* Test View - Experimental UX with Use Cases and Workflows */
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                className="w-full max-w-6xl mx-auto px-8"
+              >
+                {/* Section 1: What You Can Do */}
+                <div className="mb-12">
+                  <div className="flex items-center gap-3 mb-6">
+                    <div 
+                      className="w-10 h-10 rounded-xl flex items-center justify-center"
+                      style={{
+                        background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.9), rgba(59, 130, 246, 0.8))',
+                        boxShadow: '0 4px 20px rgba(139, 92, 246, 0.3)',
+                      }}
+                    >
+                      <Rocket className="w-5 h-5 text-white" />
+                    </div>
+                    <h3 className="text-2xl text-white" style={{ fontWeight: 'var(--font-weight-bold)' }}>
+                      What You Can Do
+                    </h3>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {/* Use Case Card 1 */}
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.1 }}
+                      className="group relative rounded-2xl border p-6 cursor-pointer transition-all duration-300 hover:scale-[1.02]"
+                      style={{
+                        background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(59, 130, 246, 0.05))',
+                        borderColor: 'rgba(139, 92, 246, 0.2)',
+                      }}
+                    >
+                      <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <ArrowRight className="w-5 h-5 text-purple-400" />
+                      </div>
+                      <div className="w-12 h-12 rounded-xl bg-purple-500/20 flex items-center justify-center mb-4">
+                        <Sparkles className="w-6 h-6 text-purple-400" />
+                      </div>
+                      <h4 className="text-lg text-white mb-2" style={{ fontWeight: 'var(--font-weight-semibold)' }}>
+                        Generate Campaign Brief
+                      </h4>
+                      <p className="text-sm text-white/60 mb-4">
+                        Create comprehensive campaign briefs in minutes with AI-powered insights
+                      </p>
+                      <div className="flex items-center gap-2 text-xs text-purple-400">
+                        <span className="px-2 py-1 rounded-full bg-purple-500/20">Work Management</span>
+                        <span className="px-2 py-1 rounded-full bg-purple-500/20">AI Agent</span>
+                      </div>
+                    </motion.div>
+
+                    {/* Use Case Card 2 */}
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.2 }}
+                      className="group relative rounded-2xl border p-6 cursor-pointer transition-all duration-300 hover:scale-[1.02]"
+                      style={{
+                        background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(6, 182, 212, 0.05))',
+                        borderColor: 'rgba(59, 130, 246, 0.2)',
+                      }}
+                    >
+                      <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <ArrowRight className="w-5 h-5 text-blue-400" />
+                      </div>
+                      <div className="w-12 h-12 rounded-xl bg-blue-500/20 flex items-center justify-center mb-4">
+                        <Target className="w-6 h-6 text-blue-400" />
+                      </div>
+                      <h4 className="text-lg text-white mb-2" style={{ fontWeight: 'var(--font-weight-semibold)' }}>
+                        Analyze Customer Segments
+                      </h4>
+                      <p className="text-sm text-white/60 mb-4">
+                        Automatically segment customers and identify high-value opportunities
+                      </p>
+                      <div className="flex items-center gap-2 text-xs text-blue-400">
+                        <span className="px-2 py-1 rounded-full bg-blue-500/20">CRM</span>
+                        <span className="px-2 py-1 rounded-full bg-blue-500/20">Vibe App</span>
+                      </div>
+                    </motion.div>
+
+                    {/* Use Case Card 3 */}
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.3 }}
+                      className="group relative rounded-2xl border p-6 cursor-pointer transition-all duration-300 hover:scale-[1.02]"
+                      style={{
+                        background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(234, 88, 12, 0.05))',
+                        borderColor: 'rgba(245, 158, 11, 0.2)',
+                      }}
+                    >
+                      <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <ArrowRight className="w-5 h-5 text-amber-400" />
+                      </div>
+                      <div className="w-12 h-12 rounded-xl bg-amber-500/20 flex items-center justify-center mb-4">
+                        <Zap className="w-6 h-6 text-amber-400" />
+                      </div>
+                      <h4 className="text-lg text-white mb-2" style={{ fontWeight: 'var(--font-weight-semibold)' }}>
+                        Auto-Optimize Campaigns
+                      </h4>
+                      <p className="text-sm text-white/60 mb-4">
+                        Let AI continuously optimize your campaigns for maximum ROI
+                      </p>
+                      <div className="flex items-center gap-2 text-xs text-amber-400">
+                        <span className="px-2 py-1 rounded-full bg-amber-500/20">Campaigns</span>
+                        <span className="px-2 py-1 rounded-full bg-amber-500/20">Sidekick</span>
+                      </div>
+                    </motion.div>
+                  </div>
+                </div>
+
+                {/* Section 2: How It Works Together */}
+                <div className="mb-12">
+                  <div className="flex items-center gap-3 mb-6">
+                    <div 
+                      className="w-10 h-10 rounded-xl flex items-center justify-center"
+                      style={{
+                        background: 'linear-gradient(135deg, rgba(6, 182, 212, 0.9), rgba(34, 197, 94, 0.8))',
+                        boxShadow: '0 4px 20px rgba(6, 182, 212, 0.3)',
+                      }}
+                    >
+                      <Box className="w-5 h-5 text-white" />
+                    </div>
+                    <h3 className="text-2xl text-white" style={{ fontWeight: 'var(--font-weight-bold)' }}>
+                      How It Works Together
+                    </h3>
+                  </div>
+                  
+                  {/* Workflow Visualization */}
+                  <div 
+                    className="rounded-2xl border p-8"
+                    style={{
+                      background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.01))',
+                      borderColor: 'rgba(255, 255, 255, 0.1)',
+                    }}
+                  >
+                    <div className="flex items-center justify-between gap-4 overflow-x-auto pb-4">
+                      {/* Step 1 */}
+                      <div className="flex flex-col items-center text-center min-w-[140px]">
+                        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center mb-3 shadow-lg shadow-indigo-500/30">
+                          <LayoutGrid className="w-8 h-8 text-white" />
+                        </div>
+                        <span className="text-white text-sm" style={{ fontWeight: 'var(--font-weight-semibold)' }}>Create Brief</span>
+                        <span className="text-white/50 text-xs mt-1">Work Management</span>
+                      </div>
+                      
+                      <ArrowRight className="w-6 h-6 text-white/30 shrink-0" />
+                      
+                      {/* Step 2 */}
+                      <div className="flex flex-col items-center text-center min-w-[140px]">
+                        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-orange-500 to-pink-500 flex items-center justify-center mb-3 shadow-lg shadow-orange-500/30">
+                          <Cpu className="w-8 h-8 text-white" />
+                        </div>
+                        <span className="text-white text-sm" style={{ fontWeight: 'var(--font-weight-semibold)' }}>Agent Reviews</span>
+                        <span className="text-white/50 text-xs mt-1">AI Agents</span>
+                      </div>
+                      
+                      <ArrowRight className="w-6 h-6 text-white/30 shrink-0" />
+                      
+                      {/* Step 3 */}
+                      <div className="flex flex-col items-center text-center min-w-[140px]">
+                        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-cyan-500 to-blue-500 flex items-center justify-center mb-3 shadow-lg shadow-cyan-500/30">
+                          <Sparkles className="w-8 h-8 text-white" />
+                        </div>
+                        <span className="text-white text-sm" style={{ fontWeight: 'var(--font-weight-semibold)' }}>Sidekick Assists</span>
+                        <span className="text-white/50 text-xs mt-1">AI Copilot</span>
+                      </div>
+                      
+                      <ArrowRight className="w-6 h-6 text-white/30 shrink-0" />
+                      
+                      {/* Step 4 */}
+                      <div className="flex flex-col items-center text-center min-w-[140px]">
+                        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center mb-3 shadow-lg shadow-amber-500/30">
+                          <Zap className="w-8 h-8 text-white" />
+                        </div>
+                        <span className="text-white text-sm" style={{ fontWeight: 'var(--font-weight-semibold)' }}>Launch Campaign</span>
+                        <span className="text-white/50 text-xs mt-1">Vibe App</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Section 3: Your Impact */}
+                <div>
+                  <div className="flex items-center gap-3 mb-6">
+                    <div 
+                      className="w-10 h-10 rounded-xl flex items-center justify-center"
+                      style={{
+                        background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.9), rgba(20, 184, 166, 0.8))',
+                        boxShadow: '0 4px 20px rgba(16, 185, 129, 0.3)',
+                      }}
+                    >
+                      <TrendingUp className="w-5 h-5 text-white" />
+                    </div>
+                    <h3 className="text-2xl text-white" style={{ fontWeight: 'var(--font-weight-bold)' }}>
+                      Your Impact
+                    </h3>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {/* Metric 1 */}
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: 0.1 }}
+                      className="rounded-2xl border p-6 text-center"
+                      style={{
+                        background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(20, 184, 166, 0.05))',
+                        borderColor: 'rgba(16, 185, 129, 0.2)',
+                      }}
+                    >
+                      <div className="flex items-center justify-center gap-2 mb-2">
+                        <Clock className="w-6 h-6 text-emerald-400" />
+                      </div>
+                      <div className="text-4xl text-white mb-2" style={{ fontWeight: 'var(--font-weight-bold)' }}>
+                        10+
+                      </div>
+                      <div className="text-white/60 text-sm">Hours Saved Weekly</div>
+                    </motion.div>
+
+                    {/* Metric 2 */}
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: 0.2 }}
+                      className="rounded-2xl border p-6 text-center"
+                      style={{
+                        background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(99, 102, 241, 0.05))',
+                        borderColor: 'rgba(59, 130, 246, 0.2)',
+                      }}
+                    >
+                      <div className="flex items-center justify-center gap-2 mb-2">
+                        <Zap className="w-6 h-6 text-blue-400" />
+                      </div>
+                      <div className="text-4xl text-white mb-2" style={{ fontWeight: 'var(--font-weight-bold)' }}>
+                        3x
+                      </div>
+                      <div className="text-white/60 text-sm">Faster Execution</div>
+                    </motion.div>
+
+                    {/* Metric 3 */}
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: 0.3 }}
+                      className="rounded-2xl border p-6 text-center"
+                      style={{
+                        background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(234, 88, 12, 0.05))',
+                        borderColor: 'rgba(245, 158, 11, 0.2)',
+                      }}
+                    >
+                      <div className="flex items-center justify-center gap-2 mb-2">
+                        <TrendingUp className="w-6 h-6 text-amber-400" />
+                      </div>
+                      <div className="text-4xl text-white mb-2" style={{ fontWeight: 'var(--font-weight-bold)' }}>
+                        40%
+                      </div>
+                      <div className="text-white/60 text-sm">More ROI</div>
+                    </motion.div>
+                  </div>
+                </div>
+              </motion.div>
             ) : (
-            /* Platform Grid - All components inside (Overview mode) */
+            /* Platform Grid - Overview mode */
+            <>
             <div 
               className="grid xl:grid-cols-[auto_1fr] gap-4 md:gap-6 transition-all duration-300"
               style={{
@@ -1204,11 +1691,17 @@ export function IsometricPlatformVisualization({
               <motion.div 
                 layout
                 transition={{ duration: 0.3, ease: 'easeInOut' }}
-                className="rounded-[var(--radius-card)] border backdrop-blur-xl overflow-hidden"
+                className="rounded-[var(--radius-card)] border backdrop-blur-xl overflow-hidden relative"
+                animate={{
+                  boxShadow: false 
+                    ? '0 0 40px rgba(34, 197, 94, 0.5), 0 0 80px rgba(34, 197, 94, 0.3)' 
+                    : '0 2px 12px rgba(0, 0, 0, 0.3)',
+                  borderColor: false
+                    ? 'rgba(34, 197, 94, 0.6)'
+                    : 'rgba(99, 102, 241, 0.2)',
+                }}
                 style={{
                   background: 'rgba(255, 255, 255, 0.02)',
-                  borderColor: 'rgba(99, 102, 241, 0.2)',
-                  boxShadow: '0 2px 12px rgba(0, 0, 0, 0.3)',
                   minWidth: isProductsCollapsed ? '80px' : '320px',
                   maxWidth: isProductsCollapsed ? '80px' : '420px',
                 }}
@@ -1518,12 +2011,19 @@ export function IsometricPlatformVisualization({
               <div className="flex flex-col gap-6">
                 
                 {/* AGENTS Section */}
-                <div 
-                  className="rounded-[var(--radius-card)] border backdrop-blur-xl p-5"
+                <motion.div 
+                  className="rounded-[var(--radius-card)] border backdrop-blur-xl p-5 relative"
+                  animate={{
+                    boxShadow: false 
+                      ? '0 0 40px rgba(191, 106, 237, 0.5), 0 0 80px rgba(191, 106, 237, 0.3)' 
+                      : '0 2px 12px rgba(0, 0, 0, 0.3)',
+                    borderColor: false
+                      ? 'rgba(191, 106, 237, 0.6)'
+                      : 'rgba(99, 102, 241, 0.2)',
+                  }}
+                  transition={{ duration: 0.5 }}
                   style={{
                     background: 'rgba(255, 255, 255, 0.02)',
-                    borderColor: 'rgba(99, 102, 241, 0.2)',
-                    boxShadow: '0 2px 12px rgba(0, 0, 0, 0.3)',
                   }}
                 >
                 <div className="flex items-center justify-between mb-4">
@@ -1616,15 +2116,22 @@ export function IsometricPlatformVisualization({
                     </motion.button>
                   )}
                 </div>
-                </div>
+                </motion.div>
                 
                 {/* VIBE APPS Section */}
-                <div 
-                  className="rounded-[var(--radius-card)] border backdrop-blur-xl p-5"
+                <motion.div 
+                  className="rounded-[var(--radius-card)] border backdrop-blur-xl p-5 relative"
+                  animate={{
+                    boxShadow: false 
+                      ? '0 0 40px rgba(255, 110, 199, 0.5), 0 0 80px rgba(255, 110, 199, 0.3)' 
+                      : '0 2px 12px rgba(0, 0, 0, 0.3)',
+                    borderColor: false
+                      ? 'rgba(255, 110, 199, 0.6)'
+                      : 'rgba(99, 102, 241, 0.2)',
+                  }}
+                  transition={{ duration: 0.5 }}
                   style={{
                     background: 'rgba(255, 255, 255, 0.02)',
-                    borderColor: 'rgba(99, 102, 241, 0.2)',
-                    boxShadow: '0 2px 12px rgba(0, 0, 0, 0.3)',
                   }}
                 >
                 <div className="flex items-center justify-between mb-4">
@@ -1713,8 +2220,13 @@ export function IsometricPlatformVisualization({
                         app={vibeApps[currentVibeIndex]}
                         index={currentVibeIndex}
                         onClick={() => {
-                          setSelectedVibeApp(vibeApps[currentVibeIndex]);
-                          setIsVibeModalOpen(true);
+                          const app = vibeApps[currentVibeIndex];
+                          if (app.url) {
+                            window.open(app.url, '_blank', 'noopener,noreferrer');
+                          } else {
+                            setSelectedVibeApp(app);
+                            setIsVibeModalOpen(true);
+                          }
                         }}
                       />
                     </AnimatePresence>
@@ -1738,17 +2250,24 @@ export function IsometricPlatformVisualization({
                     </div>
                   )}
                 </div>
-                </div>
+                </motion.div>
                 
                 {/* SIDEKICK Section */}
-                <div 
-                className="rounded-[var(--radius-card)] border backdrop-blur-xl p-5"
-                style={{
-                  background: 'rgba(255, 255, 255, 0.02)',
-                  borderColor: 'rgba(99, 102, 241, 0.2)',
-                  boxShadow: '0 2px 12px rgba(0, 0, 0, 0.3)',
-                }}
-              >
+                <motion.div 
+                  className="rounded-[var(--radius-card)] border backdrop-blur-xl p-5 relative"
+                  animate={{
+                    boxShadow: false 
+                      ? '0 0 40px rgba(99, 102, 241, 0.5), 0 0 80px rgba(99, 102, 241, 0.3)' 
+                      : '0 2px 12px rgba(0, 0, 0, 0.3)',
+                    borderColor: false
+                      ? 'rgba(99, 102, 241, 0.6)'
+                      : 'rgba(99, 102, 241, 0.2)',
+                  }}
+                  transition={{ duration: 0.5 }}
+                  style={{
+                    background: 'rgba(255, 255, 255, 0.02)',
+                  }}
+                >
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 flex items-center justify-center">
@@ -1838,11 +2357,12 @@ export function IsometricPlatformVisualization({
                     </motion.button>
                   )}
                 </div>
-                </div>
+                </motion.div>
               
               </div>
               
             </div>
+            </>
             )}
             
             {/* Status bar at bottom */}

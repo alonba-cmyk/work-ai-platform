@@ -147,9 +147,30 @@ CREATE TABLE IF NOT EXISTS site_settings (
   hero_title TEXT DEFAULT 'What would you like to achieve?',
   hero_subtitle TEXT DEFAULT 'Choose your department to see your tailored AI solution',
   tabs JSONB DEFAULT '[]',
+  sections_visibility JSONB DEFAULT '{"hero": true, "sidekick": true, "departments": true, "ai_platform": true}',
+  hero_settings JSONB DEFAULT NULL,
+  solution_tabs_visibility JSONB DEFAULT '{"overview": true, "inAction": true, "businessValue": true, "test": true}',
+  sidekick_hero_theme JSONB DEFAULT NULL,
+  sidekick_inaction_theme JSONB DEFAULT NULL,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+
+-- Add sidekick theme columns if not exists (for existing databases)
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_name = 'site_settings' AND column_name = 'sidekick_hero_theme'
+  ) THEN
+    ALTER TABLE site_settings ADD COLUMN sidekick_hero_theme JSONB DEFAULT NULL;
+  END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_name = 'site_settings' AND column_name = 'sidekick_inaction_theme'
+  ) THEN
+    ALTER TABLE site_settings ADD COLUMN sidekick_inaction_theme JSONB DEFAULT NULL;
+  END IF;
+END $$;
 
 -- AI Transformations table (for navigation tabs)
 CREATE TABLE IF NOT EXISTS ai_transformations (

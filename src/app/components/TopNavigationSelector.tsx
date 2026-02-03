@@ -1,9 +1,46 @@
 import { motion, AnimatePresence } from 'motion/react';
-import { Building2, Target, AlertCircle, Sparkles, Wand2 } from 'lucide-react';
-import { useState } from 'react';
+import { Building2, Target, AlertCircle, Sparkles, Wand2, Star, Zap, Heart, Globe, Users, Briefcase, Code, Shield } from 'lucide-react';
+import { useState, useEffect } from 'react';
 import { CustomPromptInput } from './CustomPromptInput';
+import { supabase } from '@/lib/supabase';
 
 export type SelectionMode = 'department' | 'outcome' | 'pain' | 'transformation' | 'custom';
+
+// Map icon names to components
+const iconMap: Record<string, any> = {
+  Building: Building2,
+  Building2: Building2,
+  Target: Target,
+  AlertCircle: AlertCircle,
+  Sparkles: Sparkles,
+  Wand: Wand2,
+  Wand2: Wand2,
+  Star: Star,
+  Zap: Zap,
+  Heart: Heart,
+  Globe: Globe,
+  Users: Users,
+  Briefcase: Briefcase,
+  Code: Code,
+  Shield: Shield,
+};
+
+// Map label names to SelectionMode
+const labelToMode: Record<string, SelectionMode> = {
+  'Department': 'department',
+  'Outcome': 'outcome',
+  'Pain Point': 'pain',
+  'AI Transformation': 'transformation',
+  'Custom Solution': 'custom',
+  'Build your own': 'custom',
+};
+
+interface TabConfig {
+  id: string;
+  label: string;
+  icon: string;
+  enabled?: boolean;
+}
 
 interface Department {
   id: string;
@@ -21,6 +58,14 @@ interface TopNavigationSelectorProps {
   onSelectionModeChange?: (mode: SelectionMode) => void;
 }
 
+const defaultTabs: TabConfig[] = [
+  { id: '1', label: 'Department', icon: 'Building', enabled: true },
+  { id: '2', label: 'Outcome', icon: 'Target', enabled: true },
+  { id: '3', label: 'Pain Point', icon: 'AlertCircle', enabled: true },
+  { id: '4', label: 'AI Transformation', icon: 'Sparkles', enabled: true },
+  { id: '5', label: 'Custom Solution', icon: 'Wand', enabled: true },
+];
+
 export function TopNavigationSelector({
   departments,
   selectedDepartment,
@@ -29,13 +74,40 @@ export function TopNavigationSelector({
   onSelectionModeChange
 }: TopNavigationSelectorProps) {
   
-  const tabs: Array<{ id: SelectionMode; label: string; icon: any }> = [
-    { id: 'department', label: 'Department', icon: Building2 },
-    { id: 'outcome', label: 'Outcome', icon: Target },
-    { id: 'pain', label: 'Pain Point', icon: AlertCircle },
-    { id: 'transformation', label: 'AI Transformation', icon: Sparkles },
-    { id: 'custom', label: 'Custom Solution', icon: Wand2 },
-  ];
+  const [configuredTabs, setConfiguredTabs] = useState<TabConfig[]>(defaultTabs);
+
+  // Load tabs from database
+  useEffect(() => {
+    const loadTabs = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('site_settings')
+          .select('tabs')
+          .single();
+
+        if (data?.tabs && !error) {
+          // Filter to only enabled tabs and ensure enabled property exists
+          const enabledTabs = data.tabs
+            .map((tab: TabConfig) => ({
+              ...tab,
+              enabled: tab.enabled !== undefined ? tab.enabled : true,
+            }))
+            .filter((tab: TabConfig) => tab.enabled !== false);
+          setConfiguredTabs(enabledTabs);
+        }
+      } catch (err) {
+        console.log('Using default tabs');
+      }
+    };
+    loadTabs();
+  }, []);
+
+  // Convert configured tabs to the format expected by the component
+  const tabs = configuredTabs.map(tab => ({
+    id: labelToMode[tab.label] || 'department',
+    label: tab.label,
+    icon: iconMap[tab.icon] || Building2,
+  }));
 
   const getHeaderText = () => {
     switch (selectionMode) {

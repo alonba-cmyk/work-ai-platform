@@ -91,7 +91,11 @@ function MondayLogo() {
   );
 }
 
-export function HeroLogo() {
+interface HeroLogoProps {
+  customLogoUrl?: string;
+}
+
+export function HeroLogo({ customLogoUrl }: HeroLogoProps) {
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.9 }}
@@ -102,9 +106,17 @@ export function HeroLogo() {
       {/* Glow effect background */}
       <GlowEffect />
       
-      {/* Monday.com Logo */}
+      {/* Custom Logo or Default Monday.com Logo */}
       <div className="relative z-10">
-        <MondayLogo />
+        {customLogoUrl ? (
+          <img 
+            src={customLogoUrl} 
+            alt="Logo" 
+            className="h-[60px] md:h-[78px] w-auto object-contain"
+          />
+        ) : (
+          <MondayLogo />
+        )}
       </div>
     </motion.div>
   );

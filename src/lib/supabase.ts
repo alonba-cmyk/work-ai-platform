@@ -12,6 +12,6 @@ export function getImageUrl(path: string): string {
   // If it's already a full URL, return as is
   if (path.startsWith('http')) return path;
   // Otherwise, get from Supabase storage
-  const { data } = supabase.storage.from('images').getPublicUrl(path);
+  const { data } = supabase.storage.from('Vibe').getPublicUrl(path);
   return data.publicUrl;
 }

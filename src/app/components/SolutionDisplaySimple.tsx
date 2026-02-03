@@ -77,6 +77,13 @@ interface SolutionDisplayProps {
     avatarImage: string;
     avatarBgColor: string;
   };
+  // Solution tabs visibility settings
+  solutionTabsVisibility?: {
+    overview: boolean;
+    inAction: boolean;
+    businessValue: boolean;
+    test: boolean;
+  };
   onChangeSelection?: () => void;
 }
 
@@ -137,6 +144,7 @@ export function SolutionDisplay({
   availableSidekickActions = [],
   availableProducts = [],
   selectedDepartmentInfo,
+  solutionTabsVisibility,
   onChangeSelection
 }: SolutionDisplayProps) {
   const headline = departmentHeadlines[department] || { title: 'Your AI-powered solution', subtitle: 'built on monday AI work platform' };
@@ -261,8 +269,10 @@ export function SolutionDisplay({
             originalAgentNames={originalAgents}
             originalSidekickActionNames={originalSidekickActions}
             originalVibeAppNames={originalVibeApps}
+            values={values}
             onViewImpact={values.length > 0 ? () => setIsImpactPanelOpen(true) : undefined}
             selectedDepartmentInfo={selectedDepartmentInfo}
+            solutionTabsVisibility={solutionTabsVisibility}
             onChangeSelection={onChangeSelection}
           />
         </motion.div>

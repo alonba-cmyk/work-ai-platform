@@ -1,7 +1,8 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Plus, Trash2, Save, X, Edit2, Package, Users, Sparkles, Zap, Database, ChevronRight, ChevronUp, Building2, Target, AlertCircle, Wand2, ArrowLeft, Search, ChevronDown, ArrowUpDown, Undo2 } from 'lucide-react';
+import { Plus, Trash2, Save, X, Edit2, Package, Users, Sparkles, Zap, Database, ChevronRight, ChevronUp, Building2, Target, AlertCircle, Wand2, ArrowLeft, Search, ChevronDown, ArrowUpDown, Undo2, Palette, Eye } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { ImageUploader } from './ImageUploader';
+import { useVibeTheme, vibePresets, type VibeCardTheme } from '@/contexts/VibeThemeContext';
 
 // Import product icons
 import imgWM from "@/assets/5d4f550f18adfa644c6653f867bc960bdc8a53dc.png";
@@ -37,6 +38,23 @@ function getTabDefaultIcon(tabId: TabType): string | null {
     case 'sidekick': return imgSidekick;
     default: return null;
   }
+}
+
+// Default placeholder images for Vibe apps (from monday.com/vibe)
+const defaultVibeImages = [
+  'https://dapulse-res.cloudinary.com/image/upload/f_auto,q_auto/Generator_featured%20images/Monday%20Vibe/Campaign_health_tracker.svg',
+  'https://dapulse-res.cloudinary.com/image/upload/f_auto,q_auto/Generator_featured%20images/Monday%20Vibe/Social_media_content_calendar.svg',
+  'https://dapulse-res.cloudinary.com/image/upload/f_auto,q_auto/Generator_featured%20images/Monday%20Vibe/Customer_segmentation_app.svg',
+  'https://dapulse-res.cloudinary.com/image/upload/f_auto,q_auto/Generator_featured%20images/Monday%20Vibe/Deal_flow_analyzer.svg',
+  'https://dapulse-res.cloudinary.com/image/upload/f_auto,q_auto/Generator_featured%20images/Monday%20Vibe/Sales_forecasting_app.svg',
+  'https://dapulse-res.cloudinary.com/image/upload/f_auto,q_auto/Generator_featured%20images/Monday%20Vibe/Account_portfolio_tracker.svg',
+  'https://dapulse-res.cloudinary.com/image/upload/f_auto,q_auto/Generator_featured%20images/Monday%20Vibe/Supply_chain_tracker.svg',
+  'https://dapulse-res.cloudinary.com/image/upload/f_auto,q_auto/Generator_featured%20images/Monday%20Vibe/OKR_monitoring_app.svg',
+];
+
+// Get a placeholder image for Vibe apps based on index
+function getDefaultVibeImage(index: number): string {
+  return defaultVibeImages[index % defaultVibeImages.length];
 }
 
 type TabType = 'products' | 'agents' | 'vibeapps' | 'sidekick';
@@ -210,7 +228,11 @@ export function KnowledgeBaseEditor({ defaultTab, onTabChange, onBack }: Knowled
     image: '',
     images: [] as string[],  // Additional gallery images
     department_id: '',
+    background_color: '',  // For Vibe apps custom background
   });
+  
+  // Vibe theme context for preview
+  const { theme: vibeTheme } = useVibeTheme();
 
   const currentTab = tabs.find(t => t.id === activeTab)!;
 
@@ -363,6 +385,7 @@ export function KnowledgeBaseEditor({ defaultTab, onTabChange, onBack }: Knowled
       image: '',
       images: [],
       department_id: '',
+      background_color: '',
     });
     setShowAddForm(false);
     setEditingId(null);
@@ -394,11 +417,17 @@ export function KnowledgeBaseEditor({ defaultTab, onTabChange, onBack }: Knowled
   const handleAdd = async () => {
     if (!formData.name.trim()) return;
 
+    // For Vibe apps, use a default placeholder image if none provided
+    let imageToUse = formData.image || null;
+    if (activeTab === 'vibeapps' && !imageToUse) {
+      imageToUse = getDefaultVibeImage(items.length);
+    }
+
     const insertData: Record<string, unknown> = {
       name: formData.name,
       description: formData.description || null,
       value: formData.value || null,
-      image: formData.image || null,
+      image: imageToUse,
       order_index: items.length,
       is_active: true,
     };
@@ -408,14 +437,77 @@ export function KnowledgeBaseEditor({ defaultTab, onTabChange, onBack }: Knowled
       insertData.images = formData.images || [];
     }
 
+    // Add background_color for Vibe apps
+    if (activeTab === 'vibeapps' && formData.background_color) {
+      insertData.background_color = formData.background_color;
+    }
+
     // Only add department_id if selected
     if (formData.department_id) {
       insertData.department_id = formData.department_id;
     }
 
-    const { error } = await supabase.from(currentTab.table).insert(insertData);
+    const { data: insertedData, error } = await supabase
+      .from(currentTab.table)
+      .insert(insertData)
+      .select('id')
+      .single();
 
-    if (!error) {
+    if (!error && insertedData) {
+      const newItemId = insertedData.id;
+      
+      // Get the correct ID field name for junction tables
+      const contentType = currentTab.table === 'vibe_apps' ? 'vibe_apps' : currentTab.table;
+      const idFieldName = contentType === 'vibe_apps' ? 'vibe_app_id' : 
+                          contentType === 'sidekick_actions' ? 'sidekick_action_id' :
+                          contentType === 'products' ? 'product_id' : 'agent_id';
+      
+      // Save pending intent type additions
+      const junctionPromises: Promise<any>[] = [];
+      
+      // Add departments
+      pendingIntentAdditions.departments.forEach(deptId => {
+        junctionPromises.push(
+          supabase.from(`department_${contentType}`).insert({ 
+            department_id: deptId, 
+            [idFieldName]: newItemId 
+          })
+        );
+      });
+      
+      // Add outcomes
+      pendingIntentAdditions.outcomes.forEach(outcomeId => {
+        junctionPromises.push(
+          supabase.from(`outcome_${contentType}`).insert({ 
+            outcome_id: outcomeId, 
+            [idFieldName]: newItemId 
+          })
+        );
+      });
+      
+      // Add pain points
+      pendingIntentAdditions.painPoints.forEach(ppId => {
+        junctionPromises.push(
+          supabase.from(`pain_point_${contentType}`).insert({ 
+            pain_point_id: ppId, 
+            [idFieldName]: newItemId 
+          })
+        );
+      });
+      
+      // Add AI transformations
+      pendingIntentAdditions.aiTransformations.forEach(atId => {
+        junctionPromises.push(
+          supabase.from(`ai_transformation_${contentType}`).insert({ 
+            ai_transformation_id: atId, 
+            [idFieldName]: newItemId 
+          })
+        );
+      });
+      
+      // Execute all junction table insertions
+      await Promise.all(junctionPromises);
+      
       await fetchItems();
       resetForm();
     }
@@ -437,16 +529,28 @@ export function KnowledgeBaseEditor({ defaultTab, onTabChange, onBack }: Knowled
       setLastSavedItemId(id);
     }
 
+    // For Vibe apps, use a default placeholder image if none provided
+    let imageToUse = formData.image || null;
+    if (activeTab === 'vibeapps' && !imageToUse) {
+      const itemIndex = items.findIndex(item => item.id === id);
+      imageToUse = getDefaultVibeImage(itemIndex >= 0 ? itemIndex : 0);
+    }
+
     const updateData: Record<string, unknown> = {
       name: formData.name,
       description: formData.description || null,
       value: formData.value || null,
-      image: formData.image || null,
+      image: imageToUse,
     };
 
     // Add images array for products only
     if (activeTab === 'products') {
       updateData.images = formData.images || [];
+    }
+
+    // Add background_color for Vibe apps
+    if (activeTab === 'vibeapps') {
+      updateData.background_color = formData.background_color || null;
     }
 
     if (formData.department_id) {
@@ -710,6 +814,7 @@ export function KnowledgeBaseEditor({ defaultTab, onTabChange, onBack }: Knowled
       image: item.image || '',
       images: (item as any).images || [],
       department_id: item.department_id || '',
+      background_color: (item as any).background_color || '',
     });
     // Fetch linked Intent Types for this item
     await fetchLinkedIntentTypes(item.id);
@@ -927,8 +1032,19 @@ export function KnowledgeBaseEditor({ defaultTab, onTabChange, onBack }: Knowled
       }
     });
 
-  // Group items by name for accordion view
+  // Group items by name for accordion view (skip grouping for Vibe apps - each is unique)
   const groupedItems = useMemo(() => {
+    // For Vibe apps, treat each item as unique (no grouping by name)
+    if (activeTab === 'vibeapps') {
+      return filteredItems.map(item => ({
+        name: item.name,
+        items: [item],
+        hasVariations: false,
+        firstItem: item
+      }));
+    }
+    
+    // For other tabs, group by name
     const groups: Record<string, ContentItem[]> = {};
     filteredItems.forEach(item => {
       if (!groups[item.name]) groups[item.name] = [];
@@ -941,7 +1057,7 @@ export function KnowledgeBaseEditor({ defaultTab, onTabChange, onBack }: Knowled
       // Get first item's icon for the group header
       firstItem: groupItems[0]
     }));
-  }, [filteredItems]);
+  }, [filteredItems, activeTab]);
 
   // Toggle accordion group expansion
   const toggleGroup = (groupName: string) => {
@@ -1200,6 +1316,113 @@ export function KnowledgeBaseEditor({ defaultTab, onTabChange, onBack }: Knowled
                   />
                 </div>
 
+                {/* Vibe App Design Section - Only for Vibe apps */}
+                {activeTab === 'vibeapps' && (
+                  <div className="mb-6 pt-6 border-t border-gray-700/50">
+                    <div className="flex items-center gap-2 mb-4">
+                      <Palette className="w-4 h-4 text-pink-400" />
+                      <h5 className="text-sm font-semibold text-white uppercase tracking-wide">Card Design</h5>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-6">
+                      {/* Left: Settings */}
+                      <div className="space-y-4">
+                        {/* Background Color Picker */}
+                        <div>
+                          <label className="block text-sm font-medium text-gray-400 mb-2">Background Color</label>
+                          <div className="flex items-center gap-3">
+                            <input
+                              type="color"
+                              value={formData.background_color || '#1a1a2e'}
+                              onChange={(e) => setFormData({ ...formData, background_color: e.target.value })}
+                              className="w-12 h-12 rounded-lg cursor-pointer border-2 border-gray-700 hover:border-pink-500 transition-colors"
+                            />
+                            <div className="flex-1">
+                              <input
+                                type="text"
+                                value={formData.background_color || ''}
+                                onChange={(e) => setFormData({ ...formData, background_color: e.target.value })}
+                                placeholder="#1a1a2e"
+                                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-pink-500"
+                              />
+                              <p className="text-xs text-gray-500 mt-1">Leave empty for default gradient</p>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        {/* Quick Color Presets */}
+                        <div>
+                          <label className="block text-xs font-medium text-gray-500 mb-2">Quick Presets</label>
+                          <div className="flex flex-wrap gap-2">
+                            {[
+                              { color: '', label: 'Default' },
+                              { color: '#1a1a2e', label: 'Dark Blue' },
+                              { color: '#2d1f3d', label: 'Purple' },
+                              { color: '#1f2d3d', label: 'Teal' },
+                              { color: '#3d2d1f', label: 'Warm' },
+                            ].map(preset => (
+                              <button
+                                key={preset.label}
+                                type="button"
+                                onClick={() => setFormData({ ...formData, background_color: preset.color })}
+                                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                                  formData.background_color === preset.color
+                                    ? 'bg-pink-600 text-white'
+                                    : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+                                }`}
+                              >
+                                {preset.label}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {/* Right: Live Preview */}
+                      <div>
+                        <div className="flex items-center gap-2 mb-2">
+                          <Eye className="w-4 h-4 text-gray-400" />
+                          <label className="text-sm font-medium text-gray-400">Live Preview</label>
+                        </div>
+                        <div 
+                          className="relative h-40 rounded-xl overflow-hidden border border-gray-700"
+                          style={{ 
+                            background: formData.background_color || 'linear-gradient(135deg, rgba(255, 165, 0, 0.15), rgba(233, 30, 99, 0.1))'
+                          }}
+                        >
+                          {/* Preview Card Content */}
+                          <div className="absolute inset-0 p-4 flex flex-col justify-end">
+                            {formData.image && (
+                              <img 
+                                src={formData.image} 
+                                alt="Preview" 
+                                className="absolute inset-0 w-full h-full object-cover opacity-80"
+                              />
+                            )}
+                            <div 
+                              className="relative z-10 bg-black/70 backdrop-blur-sm rounded-lg p-3"
+                            >
+                              <div className="flex items-center gap-2">
+                                <div 
+                                  className="w-8 h-8 rounded-lg flex items-center justify-center"
+                                  style={{ background: `linear-gradient(135deg, ${vibeTheme.iconGradientFrom}, ${vibeTheme.iconGradientTo})` }}
+                                >
+                                  <Zap className="w-4 h-4" style={{ color: vibeTheme.iconColor }} />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <h4 className="text-sm font-bold text-white truncate">{formData.name || 'App Name'}</h4>
+                                  <p className="text-xs text-white/60 truncate">{formData.value || 'Value proposition'}</p>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                        <p className="text-xs text-gray-500 mt-2 text-center">This is how your app will look</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 {/* Gallery Section - Only for products */}
                 {activeTab === 'products' && (
                   <div className="mb-6 pt-6 border-t border-gray-700/50">
@@ -1249,11 +1472,11 @@ export function KnowledgeBaseEditor({ defaultTab, onTabChange, onBack }: Knowled
                               const fileName = `knowledge/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
                               
                               const { error } = await supabase.storage
-                                .from('images')
+                                .from('Vibe')
                                 .upload(fileName, file);
                               
                               if (!error) {
-                                const { data } = supabase.storage.from('images').getPublicUrl(fileName);
+                                const { data } = supabase.storage.from('Vibe').getPublicUrl(fileName);
                                 if (data.publicUrl) {
                                   setFormData({ ...formData, images: [...formData.images, data.publicUrl] });
                                 }
@@ -1270,8 +1493,8 @@ export function KnowledgeBaseEditor({ defaultTab, onTabChange, onBack }: Knowled
                   </div>
                 )}
 
-            {/* Intent Type Assignment Section - Only show when editing */}
-            {editingId && (
+            {/* Intent Type Assignment Section - Show when editing or adding new */}
+            {(editingId || showAddForm) && (
               <div className="pt-6 border-t border-gray-700/50">
                 <div className="flex items-center justify-between mb-4">
                   <h5 className="text-sm font-semibold text-white uppercase tracking-wide flex items-center gap-2">
@@ -1320,8 +1543,8 @@ export function KnowledgeBaseEditor({ defaultTab, onTabChange, onBack }: Knowled
                       )}
                     </div>
                     
-                    {/* Expand to Variations button - show when editing and 2+ departments linked */}
-                    {editingId && (() => {
+                    {/* Expand to Variations button - show when editing and 2+ departments linked (not for Vibe apps) */}
+                    {editingId && activeTab !== 'vibeapps' && (() => {
                       // Calculate effective linked departments count
                       const currentDepts = [...linkedDepts];
                       pendingIntentAdditions.departments.forEach(d => {

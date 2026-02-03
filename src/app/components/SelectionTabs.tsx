@@ -1,21 +1,70 @@
 import { motion } from 'motion/react';
-import { Building2, Target, AlertCircle, Sparkles, Wand2 } from 'lucide-react';
+import { Building2, Target, AlertCircle, Sparkles, Wand2, Star, Zap, Heart, Globe, Users, Briefcase, Code, Shield } from 'lucide-react';
 
 export type SelectionMode = 'department' | 'outcome' | 'pain' | 'transformation' | 'custom';
+
+// Map icon names to components
+const iconMap: Record<string, any> = {
+  Building: Building2,
+  Building2: Building2,
+  Target: Target,
+  AlertCircle: AlertCircle,
+  Sparkles: Sparkles,
+  Wand: Wand2,
+  Wand2: Wand2,
+  Star: Star,
+  Zap: Zap,
+  Heart: Heart,
+  Globe: Globe,
+  Users: Users,
+  Briefcase: Briefcase,
+  Code: Code,
+  Shield: Shield,
+};
+
+// Map label names to SelectionMode
+const labelToMode: Record<string, SelectionMode> = {
+  'Department': 'department',
+  'Outcome': 'outcome',
+  'Pain Point': 'pain',
+  'AI Transformation': 'transformation',
+  'Custom Solution': 'custom',
+  'Build your own': 'custom',
+};
+
+export interface TabConfig {
+  id: string;
+  label: string;
+  icon: string;
+  enabled?: boolean;
+}
 
 interface SelectionTabsProps {
   activeTab: SelectionMode;
   onTabChange: (tab: SelectionMode) => void;
+  configuredTabs?: TabConfig[];
 }
 
-export function SelectionTabs({ activeTab, onTabChange }: SelectionTabsProps) {
-  const tabs: Array<{ id: SelectionMode; label: string; icon: any }> = [
-    { id: 'department', label: 'Department', icon: Building2 },
-    { id: 'outcome', label: 'Outcome', icon: Target },
-    { id: 'pain', label: 'Pain Point', icon: AlertCircle },
-    { id: 'transformation', label: 'AI Transformation', icon: Sparkles },
-    { id: 'custom', label: 'Build your own', icon: Wand2 },
-  ];
+const defaultTabs: TabConfig[] = [
+  { id: '1', label: 'Department', icon: 'Building', enabled: true },
+  { id: '2', label: 'Outcome', icon: 'Target', enabled: true },
+  { id: '3', label: 'Pain Point', icon: 'AlertCircle', enabled: true },
+  { id: '4', label: 'AI Transformation', icon: 'Sparkles', enabled: true },
+  { id: '5', label: 'Custom Solution', icon: 'Wand', enabled: true },
+];
+
+export function SelectionTabs({ activeTab, onTabChange, configuredTabs }: SelectionTabsProps) {
+  // Use configured tabs if provided, otherwise use defaults
+  const tabsToUse = configuredTabs && configuredTabs.length > 0 ? configuredTabs : defaultTabs;
+  
+  // Filter to only enabled tabs and map to the expected format
+  const tabs = tabsToUse
+    .filter(tab => tab.enabled !== false)
+    .map(tab => ({
+      id: labelToMode[tab.label] || 'department',
+      label: tab.label,
+      icon: iconMap[tab.icon] || Building2,
+    }));
 
   return (
     <div className="flex justify-center mb-12">

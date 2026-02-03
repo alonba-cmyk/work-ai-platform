@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'motion/react';
-import { X } from 'lucide-react';
+import { X, ExternalLink } from 'lucide-react';
 import { getToolLogo } from '@/app/utils/toolLogos';
 
 interface VibeAppModalProps {
@@ -11,6 +11,7 @@ interface VibeAppModalProps {
     image?: string;
     icon?: any;
     replacesTools: string[];
+    url?: string;
   } | null;
 }
 
@@ -166,41 +167,41 @@ export function VibeAppModal({ isOpen, onClose, app }: VibeAppModalProps) {
                   </div>
                 )}
 
-                {/* CTA Button */}
-                <motion.button
+                {/* CTA Button - Link to Vibe */}
+                <motion.a
+                  href={app.url || 'https://monday.com/vibe'}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   whileHover={{ scale: 1.01, y: -1 }}
                   whileTap={{ scale: 0.99 }}
-                  className="w-full py-3.5 px-6 rounded-lg flex items-center justify-center gap-2 transition-all"
+                  className="w-full py-3.5 px-6 rounded-lg flex items-center justify-center gap-2 transition-all no-underline"
                   style={{
-                    background: 'linear-gradient(135deg, rgba(255, 165, 0, 0.15), rgba(233, 30, 99, 0.1))',
-                    border: '1.5px solid rgba(255, 99, 132, 0.4)',
-                    boxShadow: '0 2px 8px rgba(233, 30, 99, 0.15)',
+                    background: 'linear-gradient(135deg, rgba(255, 165, 0, 0.2), rgba(233, 30, 99, 0.15))',
+                    border: '1.5px solid rgba(255, 99, 132, 0.5)',
+                    boxShadow: '0 4px 12px rgba(233, 30, 99, 0.2)',
                   }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.background = 'linear-gradient(135deg, rgba(255, 165, 0, 0.25), rgba(233, 30, 99, 0.2))';
-                    e.currentTarget.style.borderColor = 'rgba(255, 99, 132, 0.6)';
-                    e.currentTarget.style.boxShadow = '0 4px 12px rgba(233, 30, 99, 0.25)';
+                    e.currentTarget.style.background = 'linear-gradient(135deg, rgba(255, 165, 0, 0.35), rgba(233, 30, 99, 0.25))';
+                    e.currentTarget.style.borderColor = 'rgba(255, 99, 132, 0.7)';
+                    e.currentTarget.style.boxShadow = '0 6px 20px rgba(233, 30, 99, 0.35)';
                   }}
                   onMouseLeave={(e) => {
-                    e.currentTarget.style.background = 'linear-gradient(135deg, rgba(255, 165, 0, 0.15), rgba(233, 30, 99, 0.1))';
-                    e.currentTarget.style.borderColor = 'rgba(255, 99, 132, 0.4)';
-                    e.currentTarget.style.boxShadow = '0 2px 8px rgba(233, 30, 99, 0.15)';
-                  }}
-                  onClick={() => {
-                    // Add your CTA action here
-                    console.log('See app clicked:', app.name);
+                    e.currentTarget.style.background = 'linear-gradient(135deg, rgba(255, 165, 0, 0.2), rgba(233, 30, 99, 0.15))';
+                    e.currentTarget.style.borderColor = 'rgba(255, 99, 132, 0.5)';
+                    e.currentTarget.style.boxShadow = '0 4px 12px rgba(233, 30, 99, 0.2)';
                   }}
                 >
                   <span 
                     className="text-base"
                     style={{ 
-                      fontWeight: 'var(--font-weight-semibold)',
+                      fontWeight: 'var(--font-weight-bold)',
                       color: '#ff6384',
                     }}
                   >
-                    See app
+                    Open in Vibe
                   </span>
-                </motion.button>
+                  <ExternalLink className="w-4 h-4" style={{ color: '#ff6384' }} />
+                </motion.a>
               </div>
             </motion.div>
           </div>

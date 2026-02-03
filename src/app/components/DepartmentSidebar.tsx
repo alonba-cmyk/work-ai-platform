@@ -43,14 +43,14 @@ export function DepartmentSidebar({
       initial={{ opacity: 0, x: -20 }}
       animate={{ opacity: 1, x: 0 }}
       transition={{ duration: 0.6, delay: 0.3 }}
-      className="absolute left-32 top-8 z-50 hidden xl:block"
+      className="absolute left-[calc(50%-550px)] xl:left-[calc(50%-600px)] 2xl:left-[calc(50%-650px)] top-8 z-50 hidden xl:block"
     >
       <div 
-        className="rounded-xl border backdrop-blur-xl p-2"
+        className="rounded-[var(--radius-card)] border backdrop-blur-xl p-2"
         style={{
-          background: 'rgba(255, 255, 255, 0.03)',
-          borderColor: 'rgba(99, 102, 241, 0.15)',
-          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)',
+          background: 'rgba(255, 255, 255, 0.02)',
+          borderColor: 'rgba(255, 255, 255, 0.15)',
+          boxShadow: '0 2px 8px rgba(0, 0, 0, 0.3)',
         }}
       >
         {/* Title */}

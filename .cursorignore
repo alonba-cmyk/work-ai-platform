@@ -1,0 +1,24 @@
+﻿# Ignore heavy directories
+node_modules/
+dist/
+.git/
+
+# Ignore the large cursor assets folder  
+../.cursor/projects/*/assets/
+
+# Ignore large asset files
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.webp
+*.mp4
+*.webm
+
+# Ignore build outputs
+build/
+coverage/
+
+# Ignore logs
+*.log
+npm-debug.log*

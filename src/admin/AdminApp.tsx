@@ -1,11 +1,14 @@
 import { useState } from 'react';
 import { AdminSidebar } from './components/AdminSidebar';
 import { SiteSettingsEditor } from './components/SiteSettingsEditor';
+import { SidekickSettingsEditor } from './components/SidekickSettingsEditor';
 import { NavigationItemsEditor } from './components/NavigationItemsEditor';
 import { KnowledgeBaseEditor } from './components/KnowledgeBaseEditor';
-import { Settings, LayoutDashboard, Globe, Target, AlertCircle, Sparkles, Building2, Database, Rocket, ExternalLink, CheckCircle, X } from 'lucide-react';
+import { BusinessValuesEditor } from './components/BusinessValuesEditor';
+import { SidekickThemeProvider } from '@/contexts/SidekickThemeContext';
+import { Settings, LayoutDashboard, Globe, Target, AlertCircle, Sparkles, Building2, Database, Rocket, ExternalLink, CheckCircle, X, Wand2, TrendingUp } from 'lucide-react';
 
-type NavigationSection = 'site_settings' | 'knowledge_base' | 'outcomes' | 'pain_points' | 'ai_transformations' | 'departments' | null;
+type NavigationSection = 'site_settings' | 'knowledge_base' | 'sidekick_settings' | 'outcomes' | 'pain_points' | 'ai_transformations' | 'departments' | 'business_values' | null;
 
 type KnowledgeTab = 'products' | 'agents' | 'vibeapps' | 'sidekick';
 
@@ -40,11 +43,13 @@ export default function AdminApp() {
   const getNavSectionTitle = () => {
     switch (activeNavSection) {
       case 'site_settings': return 'Site Settings';
+      case 'sidekick_settings': return 'Sidekick Settings';
       case 'knowledge_base': return 'Knowledge Base';
       case 'outcomes': return 'Business Outcomes';
       case 'pain_points': return 'Pain Points';
       case 'ai_transformations': return 'AI Transformations';
       case 'departments': return 'Departments';
+      case 'business_values': return 'Business Values';
       default: return 'Admin Dashboard';
     }
   };
@@ -52,11 +57,13 @@ export default function AdminApp() {
   const getNavSectionSubtitle = () => {
     switch (activeNavSection) {
       case 'site_settings': return 'Edit hero section, navigation tabs, and site content';
+      case 'sidekick_settings': return 'Customize Sidekick appearance, colors, and themes';
       case 'knowledge_base': return 'Central source of truth for all AI capabilities and products';
       case 'outcomes': return 'Manage business outcomes navigation items';
       case 'pain_points': return 'Manage pain points navigation items';
       case 'ai_transformations': return 'Manage AI transformations navigation items';
       case 'departments': return 'Manage departments and their content';
+      case 'business_values': return 'Edit business value propositions for each department';
       default: return 'Select a section from the sidebar to start editing';
     }
   };
@@ -64,10 +71,12 @@ export default function AdminApp() {
   const getNavSectionIcon = () => {
     switch (activeNavSection) {
       case 'site_settings': return <Globe className="w-6 h-6 text-blue-500" />;
+      case 'sidekick_settings': return <Wand2 className="w-6 h-6 text-pink-500" />;
       case 'outcomes': return <Target className="w-6 h-6 text-green-500" />;
       case 'pain_points': return <AlertCircle className="w-6 h-6 text-amber-500" />;
       case 'ai_transformations': return <Sparkles className="w-6 h-6 text-purple-500" />;
       case 'departments': return <Building2 className="w-6 h-6 text-indigo-500" />;
+      case 'business_values': return <TrendingUp className="w-6 h-6 text-emerald-500" />;
       default: return null;
     }
   };
@@ -81,6 +90,7 @@ export default function AdminApp() {
   }
 
   return (
+    <SidekickThemeProvider>
     <div className="min-h-screen bg-gray-950 flex">
       {/* Sidebar */}
       <AdminSidebar
@@ -118,6 +128,11 @@ export default function AdminApp() {
           {/* Site Settings */}
           {activeNavSection === 'site_settings' && (
             <SiteSettingsEditor onBack={() => setActiveNavSection(null)} />
+          )}
+
+          {/* Sidekick Settings */}
+          {activeNavSection === 'sidekick_settings' && (
+            <SidekickSettingsEditor onBack={() => setActiveNavSection(null)} />
           )}
 
           {/* Knowledge Base */}
@@ -169,6 +184,11 @@ export default function AdminApp() {
             />
           )}
 
+          {/* Business Values Editor */}
+          {activeNavSection === 'business_values' && (
+            <BusinessValuesEditor onBack={() => setActiveNavSection(null)} />
+          )}
+
           {/* Welcome Screen */}
           {!activeNavSection && (
             <div className="flex items-center justify-center h-full">
@@ -188,6 +208,16 @@ export default function AdminApp() {
                     <div>
                       <p className="text-white font-medium">Site Settings</p>
                       <p className="text-gray-400 text-sm">Hero & Tabs</p>
+                    </div>
+                  </button>
+                  <button
+                    onClick={() => setActiveNavSection('sidekick_settings')}
+                    className="flex items-center gap-3 p-4 bg-gray-900 rounded-xl border border-gray-800 hover:border-gray-700 transition-colors text-left"
+                  >
+                    <Wand2 className="w-8 h-8 text-pink-500" />
+                    <div>
+                      <p className="text-white font-medium">Sidekick</p>
+                      <p className="text-gray-400 text-sm">Themes & Colors</p>
                     </div>
                   </button>
                   <button
@@ -293,5 +323,6 @@ export default function AdminApp() {
         </div>
       )}
     </div>
+    </SidekickThemeProvider>
   );
 }

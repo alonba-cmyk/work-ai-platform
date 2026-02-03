@@ -1,6 +1,6 @@
-import { Home, Globe, Target, AlertCircle, Sparkles, Building2, Database } from 'lucide-react';
+import { Home, Globe, Target, AlertCircle, Sparkles, Building2, Database, Wand2, TrendingUp } from 'lucide-react';
 
-type NavigationSection = 'site_settings' | 'knowledge_base' | 'outcomes' | 'pain_points' | 'ai_transformations' | 'departments' | null;
+type NavigationSection = 'site_settings' | 'knowledge_base' | 'sidekick_settings' | 'outcomes' | 'pain_points' | 'ai_transformations' | 'departments' | 'business_values' | null;
 
 interface AdminSidebarProps {
   activeNavSection: NavigationSection;
@@ -13,6 +13,7 @@ export function AdminSidebar({
 }: AdminSidebarProps) {
   const mainNavItems = [
     { id: 'site_settings' as const, label: 'Site Settings', icon: Globe, color: '#3b82f6' },
+    { id: 'sidekick_settings' as const, label: 'Sidekick', icon: Wand2, color: '#ec4899' },
     { id: 'knowledge_base' as const, label: 'Knowledge Base', icon: Database, color: '#8b5cf6' },
   ];
 
@@ -22,6 +23,7 @@ export function AdminSidebar({
     { id: 'outcomes' as const, label: 'Outcomes', icon: Target, color: '#10b981' },
     { id: 'pain_points' as const, label: 'Pain Points', icon: AlertCircle, color: '#f59e0b' },
     { id: 'ai_transformations' as const, label: 'AI Transformations', icon: Sparkles, color: '#8b5cf6' },
+    { id: 'business_values' as const, label: 'Business Values', icon: TrendingUp, color: '#10b981' },
   ];
 
   return (
