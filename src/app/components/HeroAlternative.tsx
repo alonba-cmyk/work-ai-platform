@@ -3,7 +3,7 @@ import { motion } from 'motion/react';
 import sidekickIcon from '@/assets/sidekick-icon.png';
 
 export function HeroAlternative() {
-  const fullText = "Welcome to the new world of work made by monday AI";
+  const fullText = "Welcome to a world where monday AI does the work for you";
   const [displayedText, setDisplayedText] = useState("");
   const [isTypingComplete, setIsTypingComplete] = useState(false);
   const [showCursor, setShowCursor] = useState(true);
@@ -38,9 +38,9 @@ export function HeroAlternative() {
     return () => clearInterval(interval);
   }, []);
 
-  // Highlight "work made by monday AI" in the text with animated effect
+  // Highlight "monday AI does the work for you" in the text with animated effect
   const renderText = () => {
-    const highlightStart = fullText.indexOf("work made by");
+    const highlightStart = fullText.indexOf("monday AI");
     const currentLength = displayedText.length;
     
     if (currentLength <= highlightStart) {
@@ -248,13 +248,43 @@ export function HeroAlternative() {
         <div className="mb-6">
           <h1 className="text-4xl md:text-5xl lg:text-7xl font-semibold leading-[1.1] tracking-tight">
             {renderText()}
-            {/* Star - only before typing starts */}
-            {!hasStartedTyping && (
-              <img 
-                src={sidekickIcon} 
-                alt="" 
-                className="inline-block w-8 h-8 ml-2 align-middle animate-pulse"
+            {/* Blinking cursor during typing */}
+            {hasStartedTyping && !isTypingComplete && (
+              <motion.span
+                className="inline-block w-[3px] h-[1em] ml-1 align-middle rounded-sm"
+                style={{
+                  background: 'linear-gradient(180deg, #6161ff 0%, #9061ff 50%, #ff6b9d 100%)',
+                }}
+                animate={{ opacity: showCursor ? 1 : 0 }}
+                transition={{ duration: 0.1 }}
               />
+            )}
+            {/* Star + Cursor - before typing starts */}
+            {!hasStartedTyping && (
+              <span className="inline-flex items-center ml-2 align-middle gap-1">
+                <motion.span
+                  className="inline-block w-[3px] h-[1em] rounded-sm"
+                  style={{
+                    background: 'linear-gradient(180deg, #6161ff 0%, #9061ff 50%, #ff6b9d 100%)',
+                  }}
+                  animate={{ opacity: showCursor ? 1 : 0 }}
+                  transition={{ duration: 0.1 }}
+                />
+                <motion.img 
+                  src={sidekickIcon} 
+                  alt="" 
+                  className="inline-block w-10 h-10 md:w-12 md:h-12"
+                  animate={{ 
+                    scale: [1, 1.1, 1],
+                    rotate: [0, 5, -5, 0],
+                  }}
+                  transition={{ 
+                    duration: 2, 
+                    repeat: Infinity,
+                    ease: 'easeInOut',
+                  }}
+                />
+              </span>
             )}
           </h1>
         </div>
@@ -277,16 +307,63 @@ export function HeroAlternative() {
             opacity: isTypingComplete ? 1 : 0 
           }}
           transition={{ delay: 0.5, duration: 0.8, ease: 'easeOut' }}
-          className="mt-12 mx-auto w-32 h-1 rounded-full bg-gradient-to-r from-[#6161ff] via-[#9061ff] to-[#ff6b9d]"
+          className="mt-8 mx-auto w-24 h-0.5 rounded-full bg-gradient-to-r from-[#6161ff] via-[#9061ff] to-[#ff6b9d]"
           style={{ transformOrigin: 'center' }}
         />
+
+        {/* Outcome Tags - The New World */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: isTypingComplete ? 1 : 0, y: isTypingComplete ? 0 : 20 }}
+          transition={{ delay: 0.8, duration: 0.6 }}
+          className="mt-12 flex flex-col items-center gap-2.5"
+        >
+          {/* Top row - 5 tags */}
+          <div className="flex flex-wrap justify-center gap-2.5">
+            {[
+              '24/7 resolution',
+              'Ship ahead of market',
+              'Growth without headcount',
+              'Reach every lead',
+              'Insights that matter',
+            ].map((outcome, i) => (
+              <motion.div
+                key={outcome}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: isTypingComplete ? 1 : 0, y: isTypingComplete ? 0 : 10 }}
+                transition={{ delay: 0.9 + i * 0.08, duration: 0.4 }}
+                className="bg-gray-50 border border-gray-200 rounded-full px-4 py-2 text-gray-600 text-sm hover:bg-white hover:border-gray-300 hover:text-gray-800 transition-all cursor-pointer"
+              >
+                {outcome}
+              </motion.div>
+            ))}
+          </div>
+          {/* Bottom row - 3 tags */}
+          <div className="flex flex-wrap justify-center gap-2.5">
+            {[
+              'Launch while you sleep',
+              'Consolidate tools',
+              'Hear every customer',
+            ].map((outcome, i) => (
+              <motion.div
+                key={outcome}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: isTypingComplete ? 1 : 0, y: isTypingComplete ? 0 : 10 }}
+                transition={{ delay: 1.3 + i * 0.08, duration: 0.4 }}
+                className="bg-gray-50 border border-gray-200 rounded-full px-4 py-2 text-gray-600 text-sm hover:bg-white hover:border-gray-300 hover:text-gray-800 transition-all cursor-pointer"
+              >
+                {outcome}
+              </motion.div>
+            ))}
+          </div>
+        </motion.div>
 
         {/* Subtle scroll indicator */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: isTypingComplete ? 1 : 0 }}
-          transition={{ delay: 1, duration: 0.6 }}
-          className="mt-20"
+          transition={{ delay: 1.5, duration: 0.6 }}
+          className="mt-16"
         >
           <motion.div
             animate={{ y: [0, 8, 0] }}
