@@ -148,6 +148,7 @@ CREATE TABLE IF NOT EXISTS site_settings (
   hero_subtitle TEXT DEFAULT 'Choose your department to see your tailored AI solution',
   tabs JSONB DEFAULT '[]',
   sections_visibility JSONB DEFAULT '{"hero": true, "sidekick": true, "departments": true, "ai_platform": true}',
+  sections_order JSONB DEFAULT '["hero", "hero_alternative", "hero_outcome_cards", "work_comparison", "sidekick_capabilities", "sidekick", "project_management", "departments", "ai_platform"]',
   hero_settings JSONB DEFAULT NULL,
   solution_tabs_visibility JSONB DEFAULT '{"overview": true, "inAction": true, "businessValue": true, "test": true}',
   sidekick_hero_theme JSONB DEFAULT NULL,
@@ -169,6 +170,16 @@ DO $$ BEGIN
     WHERE table_name = 'site_settings' AND column_name = 'sidekick_inaction_theme'
   ) THEN
     ALTER TABLE site_settings ADD COLUMN sidekick_inaction_theme JSONB DEFAULT NULL;
+  END IF;
+END $$;
+
+-- Add sections_order column if not exists (for existing databases)
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_name = 'site_settings' AND column_name = 'sections_order'
+  ) THEN
+    ALTER TABLE site_settings ADD COLUMN sections_order JSONB DEFAULT '["hero", "hero_alternative", "hero_outcome_cards", "work_comparison", "sidekick_capabilities", "sidekick", "project_management", "departments", "ai_platform"]';
   END IF;
 END $$;
 

@@ -233,12 +233,21 @@ export function useDepartmentData(departmentId: string | null) {
 interface SectionsVisibility {
   hero: boolean;
   hero_alternative: boolean;
+  hero_outcome_cards: boolean;
   work_comparison: boolean;
   sidekick_capabilities: boolean;
   sidekick: boolean;
   departments: boolean;
   ai_platform: boolean;
+  project_management: boolean;
+  agents_showcase: boolean;
+  teams_and_agents: boolean;
+  teams_and_agents_v2: boolean;
+  ai_platform_architecture: boolean;
 }
+
+export type TeamsAgentsV2Layout = 'mixed_circle' | 'team_with_agents' | 'side_by_side_unified' | 'cards_layout' | 'team_flanked';
+export type AIPlatformArchLayout = 'app_frame_list' | 'app_frame_canvas' | 'app_frame_board';
 
 interface HeroSettings {
   logo_url: string;
@@ -258,6 +267,8 @@ export interface SolutionTabsVisibility {
   inAction: boolean;
   businessValue: boolean;
   test: boolean;
+  products: boolean;
+  capabilities: boolean;
 }
 
 // Sidekick theme interface (matches SidekickPanelTheme from context)
@@ -297,20 +308,30 @@ export interface SiteSettings {
   hero_title: string;
   hero_subtitle: string;
   sections_visibility: SectionsVisibility;
+  sections_order: string[];
   hero_settings: HeroSettings;
   solution_tabs_visibility: SolutionTabsVisibility;
   sidekick_hero_theme: SidekickTheme | null;
   sidekick_inaction_theme: SidekickTheme | null;
+  teams_agents_v2_layout: TeamsAgentsV2Layout;
+  team_flanked_featured_agents: Record<string, string[]>;
+  ai_platform_arch_layout: AIPlatformArchLayout;
 }
 
 const defaultSectionsVisibility: SectionsVisibility = {
   hero: true,
   hero_alternative: false,
+  hero_outcome_cards: false,
   work_comparison: false,
   sidekick_capabilities: false,
   sidekick: true,
   departments: true,
   ai_platform: true,
+  project_management: false,
+  agents_showcase: false,
+  teams_and_agents: false,
+  teams_and_agents_v2: false,
+  ai_platform_architecture: false,
 };
 
 const defaultHeroSettings: HeroSettings = {
@@ -331,7 +352,25 @@ const defaultSolutionTabsVisibility: SolutionTabsVisibility = {
   inAction: true,
   businessValue: true,
   test: true,
+  products: true,
+  capabilities: true,
 };
+
+const defaultSectionsOrder: string[] = [
+  'hero',
+  'hero_alternative',
+  'hero_outcome_cards',
+  'work_comparison',
+  'sidekick_capabilities',
+  'sidekick',
+  'agents_showcase',
+  'project_management',
+  'teams_and_agents',
+  'teams_and_agents_v2',
+  'ai_platform_architecture',
+  'departments',
+  'ai_platform',
+];
 
 // Hook for fetching site settings
 export function useSiteSettings() {
@@ -339,10 +378,14 @@ export function useSiteSettings() {
     hero_title: 'What would you like to achieve?',
     hero_subtitle: 'with AI-powered products, AI work capabilities, and a unified context-aware layer',
     sections_visibility: defaultSectionsVisibility,
+    sections_order: defaultSectionsOrder,
     hero_settings: defaultHeroSettings,
     solution_tabs_visibility: defaultSolutionTabsVisibility,
     sidekick_hero_theme: null,
     sidekick_inaction_theme: null,
+    teams_agents_v2_layout: 'mixed_circle',
+    team_flanked_featured_agents: {},
+    ai_platform_arch_layout: 'app_frame_canvas',
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -363,14 +406,27 @@ export function useSiteSettings() {
       }
 
       if (data) {
+        // Extract _order and _teams_agents_v2_layout from sections_visibility if they exist
+        const sectionsVisibilityData = data.sections_visibility || {};
+        const { _order, _teams_agents_v2_layout, _team_flanked_featured_agents, _ai_platform_arch_layout, ...sectionsVisibilityWithoutOrder } = sectionsVisibilityData;
+        
         setSettings({
           hero_title: data.hero_title || 'What would you like to achieve?',
           hero_subtitle: data.hero_subtitle || 'with AI-powered products, AI work capabilities, and a unified context-aware layer',
-          sections_visibility: { ...defaultSectionsVisibility, ...data.sections_visibility },
+          sections_visibility: { ...defaultSectionsVisibility, ...sectionsVisibilityWithoutOrder },
+          sections_order: (() => {
+            const savedOrder = _order || data.sections_order || defaultSectionsOrder;
+            // Append any new sections from defaults that aren't in the saved order
+            const missingSections = defaultSectionsOrder.filter((s: string) => !savedOrder.includes(s));
+            return [...savedOrder, ...missingSections];
+          })(),
           hero_settings: { ...defaultHeroSettings, ...data.hero_settings },
           solution_tabs_visibility: data.solution_tabs_visibility || defaultSolutionTabsVisibility,
           sidekick_hero_theme: data.sidekick_hero_theme || null,
           sidekick_inaction_theme: data.sidekick_inaction_theme || null,
+          teams_agents_v2_layout: _teams_agents_v2_layout || 'mixed_circle',
+          team_flanked_featured_agents: _team_flanked_featured_agents || {},
+          ai_platform_arch_layout: _ai_platform_arch_layout || 'app_frame_canvas',
         });
       }
     } catch (err: any) {

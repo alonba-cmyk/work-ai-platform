@@ -826,6 +826,8 @@ interface IsometricPlatformVisualizationProps {
     inAction: boolean;
     businessValue: boolean;
     test: boolean;
+    products: boolean;
+    capabilities: boolean;
   };
   // Header info
   selectedDepartmentInfo?: {
@@ -861,7 +863,7 @@ export function IsometricPlatformVisualization({
   originalSidekickActionNames = [],
   originalVibeAppNames = [],
   onViewImpact,
-  solutionTabsVisibility = { overview: true, inAction: true, businessValue: true, test: true },
+  solutionTabsVisibility = { overview: true, inAction: true, businessValue: true, test: true, products: true, capabilities: true },
   selectedDepartmentInfo,
   onChangeSelection
 }: IsometricPlatformVisualizationProps) {
@@ -873,19 +875,23 @@ export function IsometricPlatformVisualization({
     type: null
   });
   
-  // View mode toggle: 'overview', 'in-action', 'business-value', or 'test'
-  const [viewMode, setViewMode] = useState<'overview' | 'in-action' | 'business-value' | 'test'>(() => {
+  // View mode toggle: 'overview', 'in-action', 'business-value', 'test', 'products', or 'capabilities'
+  const [viewMode, setViewMode] = useState<'overview' | 'in-action' | 'business-value' | 'test' | 'products' | 'capabilities'>(() => {
     // Initialize to first visible tab
+    if (solutionTabsVisibility.products) return 'products';
+    if (solutionTabsVisibility.capabilities) return 'capabilities';
     if (solutionTabsVisibility.overview) return 'overview';
     if (solutionTabsVisibility.inAction) return 'in-action';
     if (solutionTabsVisibility.businessValue) return 'business-value';
     if (solutionTabsVisibility.test) return 'test';
-    return 'overview';
+    return 'products';
   });
   
   // Update viewMode if current tab becomes hidden
   useEffect(() => {
     const isCurrentVisible = 
+      (viewMode === 'products' && solutionTabsVisibility.products) ||
+      (viewMode === 'capabilities' && solutionTabsVisibility.capabilities) ||
       (viewMode === 'overview' && solutionTabsVisibility.overview) ||
       (viewMode === 'in-action' && solutionTabsVisibility.inAction) ||
       (viewMode === 'business-value' && solutionTabsVisibility.businessValue) ||
@@ -893,7 +899,9 @@ export function IsometricPlatformVisualization({
     
     if (!isCurrentVisible) {
       // Switch to first visible tab
-      if (solutionTabsVisibility.overview) setViewMode('overview');
+      if (solutionTabsVisibility.products) setViewMode('products');
+      else if (solutionTabsVisibility.capabilities) setViewMode('capabilities');
+      else if (solutionTabsVisibility.overview) setViewMode('overview');
       else if (solutionTabsVisibility.inAction) setViewMode('in-action');
       else if (solutionTabsVisibility.businessValue) setViewMode('business-value');
       else if (solutionTabsVisibility.test) setViewMode('test');
@@ -1201,6 +1209,34 @@ export function IsometricPlatformVisualization({
                       border: '1px solid rgba(255, 255, 255, 0.1)'
                     }}
                   >
+                    {solutionTabsVisibility.products && (
+                      <button
+                        onClick={() => setViewMode('products')}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-full transition-all duration-300 ${
+                          viewMode === 'products' 
+                            ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white' 
+                            : 'text-white/60 hover:text-white/90'
+                        }`}
+                        style={{ fontWeight: 'var(--font-weight-medium)', fontSize: '0.875rem' }}
+                      >
+                        <Box className="w-4 h-4" />
+                        <span>AI-powered Products</span>
+                      </button>
+                    )}
+                    {solutionTabsVisibility.capabilities && (
+                      <button
+                        onClick={() => setViewMode('capabilities')}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-full transition-all duration-300 ${
+                          viewMode === 'capabilities' 
+                            ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white' 
+                            : 'text-white/60 hover:text-white/90'
+                        }`}
+                        style={{ fontWeight: 'var(--font-weight-medium)', fontSize: '0.875rem' }}
+                      >
+                        <Sparkles className="w-4 h-4" />
+                        <span>AI Work Capabilities</span>
+                      </button>
+                    )}
                     {solutionTabsVisibility.overview && (
                       <button
                         onClick={() => setViewMode('overview')}
@@ -1673,6 +1709,329 @@ export function IsometricPlatformVisualization({
                       <div className="text-white/60 text-sm">More ROI</div>
                     </motion.div>
                   </div>
+                </div>
+              </motion.div>
+            ) : viewMode === 'products' ? (
+              /* AI-powered Products View */
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                className="w-full max-w-6xl mx-auto px-8"
+              >
+                {/* Header */}
+                <div className="text-center mb-10">
+                  <motion.div 
+                    initial={{ scale: 0.8, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    className="inline-flex items-center gap-3 mb-4"
+                  >
+                    <div 
+                      className="w-12 h-12 rounded-2xl flex items-center justify-center"
+                      style={{
+                        background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.9), rgba(59, 130, 246, 0.8))',
+                        boxShadow: '0 4px 20px rgba(99, 102, 241, 0.3)',
+                      }}
+                    >
+                      <Box className="w-6 h-6 text-white" />
+                    </div>
+                    <h2 className="text-3xl text-white" style={{ fontWeight: 'var(--font-weight-bold)' }}>
+                      AI-powered Products
+                    </h2>
+                  </motion.div>
+                  <p className="text-white/60 text-lg max-w-2xl mx-auto">
+                    {labels.products.subtitle}
+                  </p>
+                </div>
+
+                {/* Products Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {products.map((product, idx) => (
+                    <motion.div
+                      key={product.name}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: idx * 0.1 }}
+                      className="relative rounded-2xl border overflow-hidden group cursor-pointer hover:scale-[1.02] transition-transform"
+                      style={{
+                        background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02))',
+                        borderColor: 'rgba(99, 102, 241, 0.3)',
+                        backdropFilter: 'blur(10px)',
+                      }}
+                      onClick={() => setSelectedProductIndex(idx)}
+                    >
+                      {/* Gradient stripe */}
+                      <div 
+                        className="absolute left-0 top-0 bottom-0 w-1"
+                        style={{
+                          background: 'linear-gradient(180deg, rgba(99, 102, 241, 0.9), rgba(59, 130, 246, 0.9))',
+                        }}
+                      />
+                      
+                      <div className="p-6 pl-8">
+                        {/* Icon and Title */}
+                        <div className="flex items-start gap-4 mb-3">
+                          <div 
+                            className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 transition-transform group-hover:scale-110"
+                            style={{
+                              background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(59, 130, 246, 0.15))',
+                            }}
+                          >
+                            <div className="w-6 h-6 flex items-center justify-center [&>svg]:w-full [&>svg]:h-full">
+                              {product.icon}
+                            </div>
+                          </div>
+                          <div className="flex-1">
+                            <h4 
+                              className="text-lg text-white mb-1"
+                              style={{ fontWeight: 'var(--font-weight-semibold)' }}
+                            >
+                              {product.name}
+                            </h4>
+                            <p className="text-white/50 text-sm line-clamp-2">
+                              {product.value || product.description}
+                            </p>
+                          </div>
+                        </div>
+                        
+                        {/* Use Cases */}
+                        {product.useCases && product.useCases.length > 0 && (
+                          <div className="mt-4 pt-4 border-t border-white/10">
+                            <p className="text-xs text-white/40 mb-2 uppercase tracking-wider">Use Cases</p>
+                            <div className="flex flex-wrap gap-2">
+                              {product.useCases.slice(0, 3).map((useCase, i) => (
+                                <span 
+                                  key={i}
+                                  className="text-xs px-2 py-1 rounded-full"
+                                  style={{
+                                    background: 'rgba(99, 102, 241, 0.15)',
+                                    color: 'rgba(165, 180, 252, 0.9)',
+                                  }}
+                                >
+                                  {useCase}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              </motion.div>
+            ) : viewMode === 'capabilities' ? (
+              /* AI Work Capabilities View */
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                className="w-full max-w-6xl mx-auto px-8"
+              >
+                {/* Header */}
+                <div className="text-center mb-10">
+                  <motion.div 
+                    initial={{ scale: 0.8, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    className="inline-flex items-center gap-3 mb-4"
+                  >
+                    <div 
+                      className="w-12 h-12 rounded-2xl flex items-center justify-center"
+                      style={{
+                        background: 'linear-gradient(135deg, rgba(168, 85, 247, 0.9), rgba(236, 72, 153, 0.8))',
+                        boxShadow: '0 4px 20px rgba(168, 85, 247, 0.3)',
+                      }}
+                    >
+                      <Sparkles className="w-6 h-6 text-white" />
+                    </div>
+                    <h2 className="text-3xl text-white" style={{ fontWeight: 'var(--font-weight-bold)' }}>
+                      AI Work Capabilities
+                    </h2>
+                  </motion.div>
+                  <p className="text-white/60 text-lg max-w-2xl mx-auto">
+                    Intelligent AI capabilities that work on top of your products
+                  </p>
+                </div>
+
+                {/* Three columns: Agents, Vibe, Sidekick */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                  {/* Agents Column */}
+                  <motion.div 
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.1 }}
+                    className="rounded-2xl border backdrop-blur-xl p-5"
+                    style={{
+                      background: 'rgba(255, 255, 255, 0.02)',
+                      borderColor: 'rgba(99, 102, 241, 0.2)',
+                    }}
+                  >
+                    <div className="flex items-center gap-3 mb-4">
+                      <img src={agentsLogo} alt="Agents" className="w-10 h-10 object-contain" />
+                      <div>
+                        <p 
+                          className="text-xs mb-1 uppercase tracking-wide"
+                          style={{ 
+                            fontWeight: 'var(--font-weight-medium)',
+                            backgroundImage: 'linear-gradient(135deg, #BF6AED, #51E0FD, #31D596)',
+                            WebkitBackgroundClip: 'text',
+                            WebkitTextFillColor: 'transparent',
+                          }}
+                        >
+                          AI Agents
+                        </p>
+                        <h4 className="text-sm text-white" style={{ fontWeight: 'var(--font-weight-semibold)' }}>
+                          {labels.agents.title}
+                        </h4>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      {agents.map((agent, idx) => (
+                        <motion.div
+                          key={agent.name}
+                          initial={{ opacity: 0, x: -10 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: 0.2 + idx * 0.05 }}
+                          className="flex items-center gap-3 p-3 rounded-xl cursor-pointer hover:bg-white/5 transition-colors"
+                          style={{ border: '1px solid rgba(99, 102, 241, 0.15)' }}
+                          onClick={() => {
+                            setSelectedAgent(agent);
+                            setIsAgentModalOpen(true);
+                          }}
+                        >
+                          {agent.image ? (
+                            <img src={agent.image} alt={agent.name} className="w-10 h-10 rounded-lg object-cover" />
+                          ) : (
+                            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-cyan-500/20 to-purple-500/20 flex items-center justify-center">
+                              <img src={agentsLogo} alt="" className="w-6 h-6 object-contain" />
+                            </div>
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm text-white truncate" style={{ fontWeight: 'var(--font-weight-medium)' }}>
+                              {agent.name}
+                            </p>
+                          </div>
+                        </motion.div>
+                      ))}
+                    </div>
+                  </motion.div>
+
+                  {/* Vibe Column */}
+                  <motion.div 
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.2 }}
+                    className="rounded-2xl border backdrop-blur-xl p-5"
+                    style={{
+                      background: 'rgba(255, 255, 255, 0.02)',
+                      borderColor: 'rgba(99, 102, 241, 0.2)',
+                    }}
+                  >
+                    <div className="flex items-center gap-3 mb-4">
+                      <img src={vibeLogo} alt="Vibe" className="w-10 h-10 object-contain" />
+                      <div>
+                        <p 
+                          className="text-xs mb-1 uppercase tracking-wide"
+                          style={{ 
+                            fontWeight: 'var(--font-weight-medium)',
+                            backgroundImage: 'linear-gradient(135deg, #FED031, #FF87EF, #FF7038)',
+                            WebkitBackgroundClip: 'text',
+                            WebkitTextFillColor: 'transparent',
+                          }}
+                        >
+                          Vibe Apps
+                        </p>
+                        <h4 className="text-sm text-white" style={{ fontWeight: 'var(--font-weight-semibold)' }}>
+                          {labels.vibe.title}
+                        </h4>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      {vibeApps.map((app, idx) => (
+                        <motion.div
+                          key={app.name}
+                          initial={{ opacity: 0, x: -10 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: 0.3 + idx * 0.05 }}
+                          className="flex items-center gap-3 p-3 rounded-xl cursor-pointer hover:bg-white/5 transition-colors"
+                          style={{ border: '1px solid rgba(99, 102, 241, 0.15)' }}
+                          onClick={() => {
+                            setSelectedVibeApp(app);
+                            setIsVibeModalOpen(true);
+                          }}
+                        >
+                          {app.image ? (
+                            <img src={app.image} alt={app.name} className="w-10 h-10 rounded-lg object-cover" />
+                          ) : (
+                            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-yellow-500/20 to-pink-500/20 flex items-center justify-center">
+                              <img src={vibeLogo} alt="" className="w-6 h-6 object-contain" />
+                            </div>
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm text-white truncate" style={{ fontWeight: 'var(--font-weight-medium)' }}>
+                              {app.name}
+                            </p>
+                          </div>
+                        </motion.div>
+                      ))}
+                    </div>
+                  </motion.div>
+
+                  {/* Sidekick Column */}
+                  <motion.div 
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.3 }}
+                    className="rounded-2xl border backdrop-blur-xl p-5"
+                    style={{
+                      background: 'rgba(255, 255, 255, 0.02)',
+                      borderColor: 'rgba(99, 102, 241, 0.2)',
+                    }}
+                  >
+                    <div className="flex items-center gap-3 mb-4">
+                      <img src={sidekickLogo} alt="Sidekick" className="w-10 h-10 object-contain" />
+                      <div>
+                        <p 
+                          className="text-xs mb-1 uppercase tracking-wide"
+                          style={{ 
+                            fontWeight: 'var(--font-weight-medium)',
+                            backgroundImage: 'linear-gradient(135deg, #A855F7, #6366F1)',
+                            WebkitBackgroundClip: 'text',
+                            WebkitTextFillColor: 'transparent',
+                          }}
+                        >
+                          Sidekick
+                        </p>
+                        <h4 className="text-sm text-white" style={{ fontWeight: 'var(--font-weight-semibold)' }}>
+                          {labels.sidekick.title}
+                        </h4>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      {sidekickActions.map((action, idx) => (
+                        <motion.div
+                          key={action.name}
+                          initial={{ opacity: 0, x: -10 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: 0.4 + idx * 0.05 }}
+                          className="flex items-center gap-3 p-3 rounded-xl cursor-pointer hover:bg-white/5 transition-colors"
+                          style={{ border: '1px solid rgba(99, 102, 241, 0.15)' }}
+                          onClick={() => {
+                            setSelectedSidekickAction(action);
+                            setIsSidekickModalOpen(true);
+                          }}
+                        >
+                          <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-500/20 to-indigo-500/20 flex items-center justify-center">
+                            <img src={sidekickLogo} alt="" className="w-6 h-6 object-contain" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm text-white truncate" style={{ fontWeight: 'var(--font-weight-medium)' }}>
+                              {action.name}
+                            </p>
+                          </div>
+                        </motion.div>
+                      ))}
+                    </div>
+                  </motion.div>
                 </div>
               </motion.div>
             ) : (

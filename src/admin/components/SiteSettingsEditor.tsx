@@ -1,6 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { Save, Plus, Trash2, GripVertical, ArrowLeft, Upload, X } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { DndContext, closestCenter, DragEndEvent, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
+import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 interface TabItem {
   id: string;
@@ -13,12 +16,21 @@ interface TabItem {
 interface SectionsVisibility {
   hero: boolean;
   hero_alternative: boolean;
+  hero_outcome_cards: boolean;
   work_comparison: boolean;
   sidekick_capabilities: boolean;
   sidekick: boolean;
   departments: boolean;
   ai_platform: boolean;
+  project_management: boolean;
+  agents_showcase: boolean;
+  teams_and_agents: boolean;
+  teams_and_agents_v2: boolean;
+  ai_platform_architecture: boolean;
 }
+
+type TeamsAgentsV2Layout = 'mixed_circle' | 'team_with_agents' | 'side_by_side_unified' | 'cards_layout';
+type AIPlatformArchLayout = 'app_frame_list' | 'app_frame_canvas' | 'app_frame_board';
 
 interface HeroSettings {
   logo_url: string;
@@ -38,6 +50,8 @@ interface SolutionTabsVisibility {
   inAction: boolean;
   businessValue: boolean;
   test: boolean;
+  products: boolean;
+  capabilities: boolean;
 }
 
 interface SiteSettings {
@@ -45,18 +59,28 @@ interface SiteSettings {
   hero_subtitle: string;
   tabs: TabItem[];
   sections_visibility: SectionsVisibility;
+  sections_order: string[];
   hero_settings: HeroSettings;
   solution_tabs_visibility: SolutionTabsVisibility;
+  teams_agents_v2_layout: TeamsAgentsV2Layout;
+  team_flanked_featured_agents: Record<string, string[]>;
+  ai_platform_arch_layout: AIPlatformArchLayout;
 }
 
 const defaultSectionsVisibility: SectionsVisibility = {
   hero: true,
   hero_alternative: false,
+  hero_outcome_cards: false,
   work_comparison: false,
   sidekick_capabilities: false,
   sidekick: true,
   departments: true,
   ai_platform: true,
+  project_management: false,
+  agents_showcase: false,
+  teams_and_agents: false,
+  teams_and_agents_v2: false,
+  ai_platform_architecture: false,
 };
 
 const defaultHeroSettings: HeroSettings = {
@@ -77,7 +101,92 @@ const defaultSolutionTabsVisibility: SolutionTabsVisibility = {
   inAction: true,
   businessValue: true,
   test: true,
+  products: true,
+  capabilities: true,
 };
+
+const defaultSectionsOrder: string[] = [
+  'hero',
+  'hero_alternative',
+  'hero_outcome_cards',
+  'work_comparison',
+  'sidekick_capabilities',
+  'sidekick',
+  'agents_showcase',
+  'project_management',
+  'teams_and_agents',
+  'teams_and_agents_v2',
+  'ai_platform_architecture',
+  'departments',
+  'ai_platform',
+];
+
+// Sortable Section Card Component
+interface SortableSectionCardProps {
+  id: string;
+  label: string;
+  isVisible: boolean;
+  onToggle: () => void;
+}
+
+function SortableSectionCard({ id, label, isVisible, onToggle }: SortableSectionCardProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 50 : undefined,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`flex items-center justify-between p-4 bg-gray-800 rounded-lg transition-opacity ${
+        isVisible ? '' : 'opacity-60'
+      } ${isDragging ? 'shadow-xl ring-2 ring-indigo-500' : ''}`}
+    >
+      <div className="flex items-center gap-3">
+        <div
+          {...attributes}
+          {...listeners}
+          className="cursor-grab active:cursor-grabbing p-1 hover:bg-gray-700 rounded"
+        >
+          <GripVertical className="w-5 h-5 text-gray-500" />
+        </div>
+        <div>
+          <span className="text-white font-medium">{label}</span>
+          <span className={`ml-3 text-xs px-2 py-1 rounded ${
+            isVisible
+              ? 'bg-green-500/20 text-green-400'
+              : 'bg-gray-600/20 text-gray-500'
+          }`}>
+            {isVisible ? 'Visible' : 'Hidden'}
+          </span>
+        </div>
+      </div>
+      <button
+        onClick={onToggle}
+        className={`relative w-14 h-7 rounded-full transition-colors ${
+          isVisible ? 'bg-indigo-600' : 'bg-gray-600'
+        }`}
+      >
+        <div
+          className={`absolute top-1 w-5 h-5 bg-white rounded-full transition-transform ${
+            isVisible ? 'left-8' : 'left-1'
+          }`}
+        />
+      </button>
+    </div>
+  );
+}
 
 interface SiteSettingsEditorProps {
   onBack?: () => void;
@@ -95,8 +204,12 @@ export function SiteSettingsEditor({ onBack }: SiteSettingsEditorProps) {
       { id: '5', label: 'Custom Solution', icon: 'Wand', order_index: 4, enabled: true },
     ],
     sections_visibility: defaultSectionsVisibility,
+    sections_order: defaultSectionsOrder,
     hero_settings: defaultHeroSettings,
     solution_tabs_visibility: defaultSolutionTabsVisibility,
+    teams_agents_v2_layout: 'mixed_circle',
+    team_flanked_featured_agents: {},
+    ai_platform_arch_layout: 'app_frame_canvas',
   });
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -122,18 +235,32 @@ export function SiteSettingsEditor({ onBack }: SiteSettingsEditorProps) {
           ...tab,
           enabled: tab.enabled !== undefined ? tab.enabled : true,
         }));
+        
+        // Extract _order and _teams_agents_v2_layout from sections_visibility if they exist
+        const sectionsVisibilityData = data.sections_visibility || {};
+        const { _order, _teams_agents_v2_layout, _team_flanked_featured_agents, _ai_platform_arch_layout, ...sectionsVisibilityWithoutOrder } = sectionsVisibilityData;
+        
         setSettings({
           hero_title: data.hero_title || settings.hero_title,
           hero_subtitle: data.hero_subtitle || settings.hero_subtitle,
           tabs: tabsWithEnabled,
           sections_visibility: (() => {
-            const merged = { ...defaultSectionsVisibility, ...data.sections_visibility };
+            const merged = { ...defaultSectionsVisibility, ...sectionsVisibilityWithoutOrder };
             console.log('Loaded sections_visibility from DB:', data.sections_visibility);
             console.log('Merged with defaults:', merged);
             return merged;
           })(),
+          sections_order: (() => {
+            const savedOrder = _order || data.sections_order || defaultSectionsOrder;
+            // Append any new sections from defaults that aren't in the saved order
+            const missingSections = defaultSectionsOrder.filter(s => !savedOrder.includes(s));
+            return [...savedOrder, ...missingSections];
+          })(),
           hero_settings: { ...defaultHeroSettings, ...data.hero_settings },
           solution_tabs_visibility: data.solution_tabs_visibility || defaultSolutionTabsVisibility,
+          teams_agents_v2_layout: _teams_agents_v2_layout || 'mixed_circle',
+          team_flanked_featured_agents: _team_flanked_featured_agents || {},
+          ai_platform_arch_layout: _ai_platform_arch_layout || 'app_frame_canvas',
         });
       }
     } catch (err) {
@@ -149,6 +276,15 @@ export function SiteSettingsEditor({ onBack }: SiteSettingsEditorProps) {
       
       console.log('Saving sections_visibility:', settings.sections_visibility);
       
+      // Store sections_order and teams_agents_v2_layout inside sections_visibility JSONB
+      const sectionsVisibilityWithExtras = {
+        ...settings.sections_visibility,
+        _order: settings.sections_order,
+        _teams_agents_v2_layout: settings.teams_agents_v2_layout,
+        _team_flanked_featured_agents: settings.team_flanked_featured_agents,
+        _ai_platform_arch_layout: settings.ai_platform_arch_layout,
+      };
+      
       const { error: updateError } = await supabase
         .from('site_settings')
         .upsert({
@@ -156,7 +292,7 @@ export function SiteSettingsEditor({ onBack }: SiteSettingsEditorProps) {
           hero_title: settings.hero_title,
           hero_subtitle: settings.hero_subtitle,
           tabs: settings.tabs,
-          sections_visibility: settings.sections_visibility,
+          sections_visibility: sectionsVisibilityWithExtras,
           hero_settings: settings.hero_settings,
           solution_tabs_visibility: settings.solution_tabs_visibility,
           updated_at: new Date().toISOString(),
@@ -195,6 +331,31 @@ export function SiteSettingsEditor({ onBack }: SiteSettingsEditorProps) {
         [tab]: !settings.solution_tabs_visibility[tab],
       },
     });
+  };
+
+  // Drag and drop sensors and handlers
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    })
+  );
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    
+    if (over && active.id !== over.id) {
+      const oldIndex = settings.sections_order.indexOf(active.id as string);
+      const newIndex = settings.sections_order.indexOf(over.id as string);
+      
+      const newOrder = arrayMove(settings.sections_order, oldIndex, newIndex);
+      
+      setSettings({
+        ...settings,
+        sections_order: newOrder,
+      });
+    }
   };
 
   const updateHeroSettings = (field: keyof HeroSettings, value: string) => {
@@ -272,11 +433,17 @@ export function SiteSettingsEditor({ onBack }: SiteSettingsEditorProps) {
   const sectionLabels: Record<keyof SectionsVisibility, string> = {
     hero: 'Hero Section',
     hero_alternative: 'Hero Alternative (White)',
+    hero_outcome_cards: 'Hero Outcome Cards (Two-column)',
     work_comparison: 'Work Comparison (Black/White)',
     sidekick_capabilities: 'Sidekick (Half story)',
     sidekick: 'Sidekick (Full story)',
     departments: 'Departments Selector',
     ai_platform: 'AI Work Platform',
+    project_management: 'Project Management (New World)',
+    agents_showcase: 'Agents Showcase (monday agents)',
+    teams_and_agents: 'Teams and Agents',
+    teams_and_agents_v2: 'Teams and Agents V2 (Multi-Layout)',
+    ai_platform_architecture: 'AI Platform Architecture (Vision)',
   };
 
   const solutionTabLabels: Record<keyof SolutionTabsVisibility, string> = {
@@ -284,6 +451,8 @@ export function SiteSettingsEditor({ onBack }: SiteSettingsEditorProps) {
     inAction: 'In Action',
     businessValue: 'Business Value',
     test: 'Test',
+    products: 'AI-powered Products',
+    capabilities: 'AI Work Capabilities',
   };
 
   const fontSizeOptions = [
@@ -326,42 +495,111 @@ export function SiteSettingsEditor({ onBack }: SiteSettingsEditorProps) {
       {/* Sections Visibility Panel */}
       {activePanel === 'sections' && (
         <div className="bg-gray-900 rounded-xl p-6 border border-gray-800 mb-6">
-          <h2 className="text-xl font-semibold text-white mb-6">Section Visibility</h2>
-          <p className="text-gray-400 text-sm mb-6">Control which sections are visible on the main page.</p>
+          <h2 className="text-xl font-semibold text-white mb-6">Section Visibility & Order</h2>
+          <p className="text-gray-400 text-sm mb-6">
+            Drag sections to reorder them on the main page. Toggle visibility with the switch.
+          </p>
           
-          <div className="space-y-4">
-            {(Object.keys(settings.sections_visibility) as Array<keyof SectionsVisibility>).map((section) => (
-              <div
-                key={section}
-                className={`flex items-center justify-between p-4 bg-gray-800 rounded-lg transition-opacity ${
-                  settings.sections_visibility[section] ? '' : 'opacity-60'
-                }`}
-              >
-                <div>
-                  <span className="text-white font-medium">{sectionLabels[section]}</span>
-                  <span className={`ml-3 text-xs px-2 py-1 rounded ${
-                    settings.sections_visibility[section]
-                      ? 'bg-green-500/20 text-green-400'
-                      : 'bg-gray-600/20 text-gray-500'
-                  }`}>
-                    {settings.sections_visibility[section] ? 'Visible' : 'Hidden'}
-                  </span>
-                </div>
-                <button
-                  onClick={() => toggleSection(section)}
-                  className={`relative w-14 h-7 rounded-full transition-colors ${
-                    settings.sections_visibility[section] ? 'bg-indigo-600' : 'bg-gray-600'
-                  }`}
-                >
-                  <div
-                    className={`absolute top-1 w-5 h-5 bg-white rounded-full transition-transform ${
-                      settings.sections_visibility[section] ? 'left-8' : 'left-1'
-                    }`}
-                  />
-                </button>
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+          >
+            <SortableContext
+              items={settings.sections_order}
+              strategy={verticalListSortingStrategy}
+            >
+              <div className="space-y-4">
+                {settings.sections_order.map((sectionId) => {
+                  const section = sectionId as keyof SectionsVisibility;
+                  // Skip if section doesn't exist in visibility settings
+                  if (!(section in settings.sections_visibility)) return null;
+                  
+                  return (
+                    <SortableSectionCard
+                      key={section}
+                      id={section}
+                      label={sectionLabels[section]}
+                      isVisible={settings.sections_visibility[section]}
+                      onToggle={() => toggleSection(section)}
+                    />
+                  );
+                })}
               </div>
-            ))}
-          </div>
+            </SortableContext>
+          </DndContext>
+
+          {/* Teams & Agents V2 Layout Variant Selector */}
+          {settings.sections_visibility.teams_and_agents_v2 && (
+            <div className="mt-6 p-4 bg-gray-800/50 rounded-lg border border-indigo-500/30">
+              <h3 className="text-md font-semibold text-white mb-3">Teams & Agents V2 - Layout Variant</h3>
+              <p className="text-gray-400 text-xs mb-4">Choose the visual layout for the Teams & Agents V2 section.</p>
+              <div className="grid grid-cols-2 gap-3">
+                {([
+                  { value: 'mixed_circle' as TeamsAgentsV2Layout, label: 'Mixed Circle', desc: 'Team and agents in a unified circular arrangement' },
+                  { value: 'team_with_agents' as TeamsAgentsV2Layout, label: 'Team + Agents Below', desc: 'Team on top, complementary agents below' },
+                  { value: 'side_by_side_unified' as TeamsAgentsV2Layout, label: 'Side by Side (Unified)', desc: 'Left/right with flowing gradient connection' },
+                  { value: 'cards_layout' as TeamsAgentsV2Layout, label: 'Cards', desc: 'Cards pairing each team member with an AI agent' },
+                  { value: 'team_flanked' as TeamsAgentsV2Layout, label: 'Team Flanked', desc: 'Team in center, agents flanking from both sides' },
+                ]).map((option) => (
+                  <button
+                    key={option.value}
+                    onClick={() => setSettings({
+                      ...settings,
+                      teams_agents_v2_layout: option.value,
+                    })}
+                    className={`p-3 rounded-lg text-left transition-all ${
+                      settings.teams_agents_v2_layout === option.value
+                        ? 'bg-indigo-600/30 border-2 border-indigo-500 ring-1 ring-indigo-400/30'
+                        : 'bg-gray-700/50 border-2 border-transparent hover:bg-gray-700 hover:border-gray-600'
+                    }`}
+                  >
+                    <span className={`block text-sm font-medium ${
+                      settings.teams_agents_v2_layout === option.value ? 'text-indigo-300' : 'text-white'
+                    }`}>
+                      {option.label}
+                    </span>
+                    <span className="block text-xs text-gray-400 mt-1">{option.desc}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* AI Platform Architecture Layout Variant Selector */}
+          {settings.sections_visibility.ai_platform_architecture && (
+            <div className="mt-6 p-4 bg-gray-800/50 rounded-lg border border-cyan-500/30">
+              <h3 className="text-md font-semibold text-white mb-3">AI Platform Architecture - Layout Variant</h3>
+              <p className="text-gray-400 text-xs mb-4">Choose the visual style. Both show a unified system with agents working in parallel.</p>
+              <div className="grid grid-cols-2 gap-3">
+                {([
+                  { value: 'app_frame_board' as AIPlatformArchLayout, label: 'App Frame - Board', desc: 'monday-board-style view with large agent rows, clear AI identity, use-case header, and instruction flow' },
+                  { value: 'app_frame_canvas' as AIPlatformArchLayout, label: 'App Frame - Canvas', desc: 'Agent workstations on a visual canvas: each agent has a positioned desk showing task, activity detail, and progress' },
+                  { value: 'app_frame_list' as AIPlatformArchLayout, label: 'App Frame - List', desc: 'Structured board with rows: each agent on a line with task detail, progress bar, and status' },
+                ]).map((option) => (
+                  <button
+                    key={option.value}
+                    onClick={() => setSettings({
+                      ...settings,
+                      ai_platform_arch_layout: option.value,
+                    })}
+                    className={`p-3 rounded-lg text-left transition-all ${
+                      settings.ai_platform_arch_layout === option.value
+                        ? 'bg-cyan-600/30 border-2 border-cyan-500 ring-1 ring-cyan-400/30'
+                        : 'bg-gray-700/50 border-2 border-transparent hover:bg-gray-700 hover:border-gray-600'
+                    }`}
+                  >
+                    <span className={`block text-sm font-medium ${
+                      settings.ai_platform_arch_layout === option.value ? 'text-cyan-300' : 'text-white'
+                    }`}>
+                      {option.label}
+                    </span>
+                    <span className="block text-xs text-gray-400 mt-1">{option.desc}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Solution Tabs Visibility */}
           <div className="mt-8 pt-6 border-t border-gray-700">

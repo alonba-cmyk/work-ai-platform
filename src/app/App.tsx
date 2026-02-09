@@ -113,8 +113,14 @@ import { DepartmentSidebar } from '@/app/components/DepartmentSidebar';
 import { CustomPromptInput } from '@/app/components/CustomPromptInput';
 import { BeforeAfterBoardSection } from '@/app/components/BeforeAfterBoardSection';
 import { HeroAlternative } from '@/app/components/HeroAlternative';
+import { HeroOutcomeCards } from '@/app/components/HeroOutcomeCards';
 import { WorkComparisonSection } from '@/app/components/WorkComparisonSection';
 import { SidekickCapabilitiesSection } from '@/app/components/SidekickCapabilitiesSection';
+import { ProjectManagementSection } from '@/app/components/ProjectManagementSection';
+import { AgentsShowcaseSection } from '@/app/components/AgentsShowcaseSection';
+import { TeamsAndAgentsSection } from '@/app/components/TeamsAndAgentsSection';
+import { TeamsAndAgentsV2 } from '@/app/components/TeamsAndAgentsV2';
+import { AIPlatformArchitectureSection } from '@/app/components/AIPlatformArchitectureSection';
 
 // Import SidekickThemeProvider for sidekick theming
 import { SidekickThemeProvider, SidekickPanelTheme } from '@/contexts/SidekickThemeContext';
@@ -1401,197 +1407,223 @@ export default function App() {
     );
   }
 
+  // Define section components for dynamic rendering
+  const sectionComponents: Record<string, React.ReactNode> = {
+    hero: siteSettings.sections_visibility.hero ? (
+      <section 
+        key="hero"
+        className="relative min-h-screen flex flex-col items-center justify-center px-6 py-20"
+        style={getHeroBackground()}
+      >
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8 }}
+          className="text-center max-w-5xl mx-auto"
+        >
+          {/* Monday.com Logo */}
+          <HeroLogo customLogoUrl={siteSettings.hero_settings.logo_url} />
+          
+          {/* AI Work Platform Label */}
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.3, duration: 0.8 }}
+            className="text-sm md:text-base tracking-[0.2em] uppercase text-muted-foreground/80 mb-8"
+          >
+            {siteSettings.hero_settings.platform_label || 'AI Work Platform'}
+          </motion.p>
+          
+          {/* Main Headline */}
+          <motion.p
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5, duration: 0.8 }}
+            className="mb-6 leading-tight"
+            style={{ fontSize: getHeroFontSize() }}
+          >
+            <span className="text-foreground/80">{siteSettings.hero_settings.headline_text || 'Empowering every team '}</span>
+            <span className="bg-gradient-to-r from-[#eaecd8] via-[#c7ede0] to-[#6161ff] bg-clip-text text-transparent">
+              {siteSettings.hero_settings.headline_gradient_text || 'to accelerate business impact'}
+            </span>
+          </motion.p>
+          
+          {/* Subtitle */}
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.7, duration: 0.8 }}
+            className="text-base md:text-lg mb-12 text-muted-foreground/70 max-w-3xl mx-auto"
+          >
+            {siteSettings.hero_subtitle || 'with AI-powered products, AI work capabilities, and a unified context-aware layer'}
+          </motion.p>
+          
+          {/* Scroll indicator */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.9, duration: 0.6 }}
+            className="flex flex-col items-center gap-3 mt-12"
+          >
+            <motion.p 
+              className="text-sm text-white/60"
+              style={{ fontWeight: 'var(--font-weight-medium)' }}
+              animate={{ opacity: [0.6, 1, 0.6] }}
+              transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+            >
+              Scroll to explore your solution
+            </motion.p>
+            <motion.div
+              animate={{ y: [0, 8, 0] }}
+              transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
+            >
+              <ChevronDown className="w-5 h-5 text-white/60" />
+            </motion.div>
+          </motion.div>
+        </motion.div>
+
+        {/* Background gradient blur */}
+        <div className="absolute inset-0 -z-10 overflow-hidden">
+          <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/20 rounded-full blur-[120px]" />
+          <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-accent/20 rounded-full blur-[120px]" />
+        </div>
+      </section>
+    ) : null,
+
+    hero_alternative: siteSettings.sections_visibility.hero_alternative ? (
+      <HeroAlternative key="hero_alternative" />
+    ) : null,
+
+    hero_outcome_cards: siteSettings.sections_visibility.hero_outcome_cards ? (
+      <HeroOutcomeCards key="hero_outcome_cards" />
+    ) : null,
+
+    work_comparison: siteSettings.sections_visibility.work_comparison ? (
+      <WorkComparisonSection key="work_comparison" agents={mappedAgents} />
+    ) : null,
+
+    sidekick_capabilities: siteSettings.sections_visibility.sidekick_capabilities ? (
+      <SidekickCapabilitiesSection key="sidekick_capabilities" />
+    ) : null,
+
+    sidekick: siteSettings.sections_visibility.sidekick ? (
+      <BeforeAfterBoardSection
+        key="sidekick"
+        onExplore={() => {
+          const selectorSection = document.getElementById('selector-section');
+          selectorSection?.scrollIntoView({ behavior: 'smooth' });
+        }}
+      />
+    ) : null,
+
+    agents_showcase: siteSettings.sections_visibility.agents_showcase ? (
+      <AgentsShowcaseSection key="agents_showcase" />
+    ) : null,
+
+    project_management: siteSettings.sections_visibility.project_management ? (
+      <ProjectManagementSection key="project_management" />
+    ) : null,
+
+    teams_and_agents: siteSettings.sections_visibility.teams_and_agents ? (
+      <TeamsAndAgentsSection key="teams_and_agents" />
+    ) : null,
+
+    teams_and_agents_v2: siteSettings.sections_visibility.teams_and_agents_v2 ? (
+      <TeamsAndAgentsV2 key="teams_and_agents_v2" layoutVariant={siteSettings.teams_agents_v2_layout} />
+    ) : null,
+
+    ai_platform_architecture: siteSettings.sections_visibility.ai_platform_architecture ? (
+      <AIPlatformArchitectureSection key="ai_platform_architecture" layoutVariant={siteSettings.ai_platform_arch_layout} />
+    ) : null,
+
+    departments: siteSettings.sections_visibility.departments ? (
+      <section
+        key="departments"
+        id="selector-section"
+        className="py-20"
+        style={{ background: '#000000' }}
+      >
+        <TopNavigationSelector
+          departments={getDisplayList()}
+          selectedDepartment={selectedDepartment}
+          onDepartmentSelect={handleDepartmentSelect}
+          selectionMode={selectionMode}
+          onSelectionModeChange={setSelectionMode}
+        />
+      </section>
+    ) : null,
+
+    ai_platform: siteSettings.sections_visibility.ai_platform ? (
+      <AnimatePresence key="ai_platform">
+        {showSolution && selectedDepartment && (
+          <motion.section
+            id="solution-section"
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 50 }}
+            transition={{ duration: 0.6 }}
+            className="py-24 px-4 lg:px-6"
+            style={{ background: '#000000' }}
+          >
+            <div className="max-w-[1800px] mx-auto relative">
+              {/* Department Sidebar - positioned relative to container */}
+              <DepartmentSidebar
+                departments={getDisplayList()}
+                selectedDepartment={selectedDepartment}
+                onSelectDepartment={handleDepartmentSelect}
+                selectionMode={selectionMode}
+              />
+              
+              {/* AI Work Platform Visualization - Full Width with Header Inside */}
+              {contentLoading ? (
+                <div className="flex items-center justify-center py-20">
+                  <Loader2 className="w-8 h-8 text-primary animate-spin" />
+                  <span className="ml-3 text-muted-foreground">Loading content...</span>
+                </div>
+              ) : (
+                <SolutionDisplay
+                  department={selectedDepartment}
+                  products={mappedProducts}
+                  capabilities={mappedSidekickActions}
+                  agents={mappedAgents}
+                  vibeApps={mappedVibeApps}
+                  values={getValuesForDepartment(selectedDepartment as BusinessDepartment).map(v => ({
+                    icon: getBusinessValueIcon(v.iconName),
+                    title: v.title,
+                    description: v.description,
+                    supportedBy: v.supportedBy,
+                    replacesTools: v.replacesTools,
+                  }))}
+                  availableAgents={mappedAgents}
+                  availableVibeApps={mappedVibeApps}
+                  availableSidekickActions={mappedSidekickActions}
+                  availableProducts={mappedProducts}
+                  selectedDepartmentInfo={getDisplayList().find(d => d.id === selectedDepartment)}
+                  solutionTabsVisibility={siteSettings.solution_tabs_visibility}
+                  onChangeSelection={() => {
+                    document.getElementById('selector-section')?.scrollIntoView({ 
+                      behavior: 'smooth',
+                      block: 'center'
+                    });
+                  }}
+                />
+              )}
+            </div>
+          </motion.section>
+        )}
+      </AnimatePresence>
+    ) : null,
+  };
+
   return (
     <SidekickThemeProvider
       initialHeroTheme={siteSettings.sidekick_hero_theme as SidekickPanelTheme | null}
       initialInActionTheme={siteSettings.sidekick_inaction_theme as SidekickPanelTheme | null}
     >
-    <div className="min-h-screen bg-background text-foreground">
-      {/* Hero Section */}
-      {siteSettings.sections_visibility.hero && (
-        <section 
-          className="relative min-h-screen flex flex-col items-center justify-center px-6 py-20"
-          style={getHeroBackground()}
-        >
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            className="text-center max-w-5xl mx-auto"
-          >
-            {/* Monday.com Logo */}
-            <HeroLogo customLogoUrl={siteSettings.hero_settings.logo_url} />
-            
-            {/* AI Work Platform Label */}
-            <motion.p
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.3, duration: 0.8 }}
-              className="text-sm md:text-base tracking-[0.2em] uppercase text-muted-foreground/80 mb-8"
-            >
-              {siteSettings.hero_settings.platform_label || 'AI Work Platform'}
-            </motion.p>
-            
-            {/* Main Headline */}
-            <motion.p
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.5, duration: 0.8 }}
-              className="mb-6 leading-tight"
-              style={{ fontSize: getHeroFontSize() }}
-            >
-              <span className="text-foreground/80">{siteSettings.hero_settings.headline_text || 'Empowering every team '}</span>
-              <span className="bg-gradient-to-r from-[#eaecd8] via-[#c7ede0] to-[#6161ff] bg-clip-text text-transparent">
-                {siteSettings.hero_settings.headline_gradient_text || 'to accelerate business impact'}
-              </span>
-            </motion.p>
-            
-            {/* Subtitle */}
-            <motion.p
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.7, duration: 0.8 }}
-              className="text-base md:text-lg mb-12 text-muted-foreground/70 max-w-3xl mx-auto"
-            >
-              {siteSettings.hero_subtitle || 'with AI-powered products, AI work capabilities, and a unified context-aware layer'}
-            </motion.p>
-            
-            {/* Scroll indicator */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.9, duration: 0.6 }}
-              className="flex flex-col items-center gap-3 mt-12"
-            >
-              <motion.p 
-                className="text-sm text-white/60"
-                style={{ fontWeight: 'var(--font-weight-medium)' }}
-                animate={{ opacity: [0.6, 1, 0.6] }}
-                transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
-              >
-                Scroll to explore your solution
-              </motion.p>
-              <motion.div
-                animate={{ y: [0, 8, 0] }}
-                transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
-              >
-                <ChevronDown className="w-5 h-5 text-white/60" />
-              </motion.div>
-            </motion.div>
-          </motion.div>
-
-          {/* Background gradient blur */}
-          <div className="absolute inset-0 -z-10 overflow-hidden">
-            <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/20 rounded-full blur-[120px]" />
-            <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-accent/20 rounded-full blur-[120px]" />
-          </div>
-        </section>
-      )}
-
-      {/* Hero Alternative Section (White background with typing effect) */}
-      {siteSettings.sections_visibility.hero_alternative && (
-        <HeroAlternative />
-      )}
-
-      {/* Work Comparison Section (Black/White split) */}
-      {siteSettings.sections_visibility.work_comparison && (
-        <WorkComparisonSection agents={mappedAgents} />
-      )}
-
-      {/* Sidekick (Half story) Section */}
-      {siteSettings.sections_visibility.sidekick_capabilities && (
-        <SidekickCapabilitiesSection />
-      )}
-
-      {/* Sidekick (Full story) Section */}
-      {siteSettings.sections_visibility.sidekick && (
-        <BeforeAfterBoardSection
-          onExplore={() => {
-            const selectorSection = document.getElementById('selector-section');
-            selectorSection?.scrollIntoView({ behavior: 'smooth' });
-          }}
-        />
-      )}
-
-      {/* Top Navigation Selector Section (Departments) */}
-      {siteSettings.sections_visibility.departments && (
-        <section
-          id="selector-section"
-          className="py-20"
-          style={{ background: '#000000' }}
-        >
-          <TopNavigationSelector
-            departments={getDisplayList()}
-            selectedDepartment={selectedDepartment}
-            onDepartmentSelect={handleDepartmentSelect}
-            selectionMode={selectionMode}
-            onSelectionModeChange={setSelectionMode}
-          />
-        </section>
-      )}
-
-      {/* Solution Section - AI Work Platform - Only visible after selection */}
-      {siteSettings.sections_visibility.ai_platform && (
-        <AnimatePresence>
-          {showSolution && selectedDepartment && (
-            <motion.section
-              id="solution-section"
-              initial={{ opacity: 0, y: 50 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 50 }}
-              transition={{ duration: 0.6 }}
-              className="py-24 px-4 lg:px-6"
-              style={{ background: '#000000' }}
-            >
-              <div className="max-w-[1800px] mx-auto relative">
-                {/* Department Sidebar - positioned relative to container */}
-                <DepartmentSidebar
-                  departments={getDisplayList()}
-                  selectedDepartment={selectedDepartment}
-                  onSelectDepartment={handleDepartmentSelect}
-                  selectionMode={selectionMode}
-                />
-                
-                {/* AI Work Platform Visualization - Full Width with Header Inside */}
-                {contentLoading ? (
-                  <div className="flex items-center justify-center py-20">
-                    <Loader2 className="w-8 h-8 text-primary animate-spin" />
-                    <span className="ml-3 text-muted-foreground">Loading content...</span>
-                  </div>
-                ) : (
-                  <SolutionDisplay
-                    department={selectedDepartment}
-                    products={mappedProducts}
-                    capabilities={mappedSidekickActions}
-                    agents={mappedAgents}
-                    vibeApps={mappedVibeApps}
-                    values={getValuesForDepartment(selectedDepartment as BusinessDepartment).map(v => ({
-                      icon: getBusinessValueIcon(v.iconName),
-                      title: v.title,
-                      description: v.description,
-                      supportedBy: v.supportedBy,
-                      replacesTools: v.replacesTools,
-                    }))}
-                    availableAgents={mappedAgents}
-                    availableVibeApps={mappedVibeApps}
-                    availableSidekickActions={mappedSidekickActions}
-                    availableProducts={mappedProducts}
-                    selectedDepartmentInfo={getDisplayList().find(d => d.id === selectedDepartment)}
-                    solutionTabsVisibility={siteSettings.solution_tabs_visibility}
-                    onChangeSelection={() => {
-                      document.getElementById('selector-section')?.scrollIntoView({ 
-                        behavior: 'smooth',
-                        block: 'center'
-                      });
-                    }}
-                  />
-                )}
-              </div>
-            </motion.section>
-          )}
-        </AnimatePresence>
-      )}
-    </div>
+      <div className="min-h-screen bg-background text-foreground">
+        {/* Render sections in order based on sections_order */}
+        {siteSettings.sections_order.map((sectionId) => sectionComponents[sectionId])}
+      </div>
     </SidekickThemeProvider>
   );
 }

@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import sidekickIcon from '@/assets/sidekick-icon.png';
+import agentPink from '@/assets/agent-pink.png';
+import agentCyan from '@/assets/agent-cyan.png';
+import agentOrange from '@/assets/agent-orange.png';
 
 export function HeroAlternative() {
   const fullText = "Welcome to a world where monday AI does the work for you";
@@ -8,6 +11,15 @@ export function HeroAlternative() {
   const [isTypingComplete, setIsTypingComplete] = useState(false);
   const [showCursor, setShowCursor] = useState(true);
   const [hasStartedTyping, setHasStartedTyping] = useState(false);
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+
+  const toggleTag = (tag: string) => {
+    setSelectedTags(prev => 
+      prev.includes(tag) 
+        ? prev.filter(t => t !== tag)
+        : [...prev, tag]
+    );
+  };
 
   // Delay before typing starts (show star first)
   useEffect(() => {
@@ -332,8 +344,20 @@ export function HeroAlternative() {
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: isTypingComplete ? 1 : 0, y: isTypingComplete ? 0 : 10 }}
                 transition={{ delay: 0.9 + i * 0.08, duration: 0.4 }}
-                className="bg-gray-50 border border-gray-200 rounded-full px-4 py-2 text-gray-600 text-sm hover:bg-white hover:border-gray-300 hover:text-gray-800 transition-all cursor-pointer"
+                onClick={() => toggleTag(outcome)}
+                className={`rounded-full px-4 py-2 text-sm transition-all cursor-pointer flex items-center gap-2 ${
+                  selectedTags.includes(outcome)
+                    ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white border border-transparent shadow-md'
+                    : 'bg-gray-50 border border-gray-200 text-gray-600 hover:bg-white hover:border-gray-300 hover:text-gray-800'
+                }`}
               >
+                {outcome === 'Growth without headcount' && (
+                  <span className="flex -space-x-1.5">
+                    <img src={agentOrange} alt="" className="w-5 h-5 rounded-full border border-white object-cover object-top bg-gray-100" />
+                    <img src={agentCyan} alt="" className="w-5 h-5 rounded-full border border-white object-cover object-top bg-gray-100" />
+                    <img src={agentPink} alt="" className="w-5 h-5 rounded-full border border-white object-cover object-top bg-gray-100" />
+                  </span>
+                )}
                 {outcome}
               </motion.div>
             ))}
@@ -350,7 +374,12 @@ export function HeroAlternative() {
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: isTypingComplete ? 1 : 0, y: isTypingComplete ? 0 : 10 }}
                 transition={{ delay: 1.3 + i * 0.08, duration: 0.4 }}
-                className="bg-gray-50 border border-gray-200 rounded-full px-4 py-2 text-gray-600 text-sm hover:bg-white hover:border-gray-300 hover:text-gray-800 transition-all cursor-pointer"
+                onClick={() => toggleTag(outcome)}
+                className={`rounded-full px-4 py-2 text-sm transition-all cursor-pointer ${
+                  selectedTags.includes(outcome)
+                    ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white border border-transparent shadow-md'
+                    : 'bg-gray-50 border border-gray-200 text-gray-600 hover:bg-white hover:border-gray-300 hover:text-gray-800'
+                }`}
               >
                 {outcome}
               </motion.div>
@@ -358,12 +387,26 @@ export function HeroAlternative() {
           </div>
         </motion.div>
 
+        {/* CTA Button */}
+        <motion.button
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: isTypingComplete ? 1 : 0, y: isTypingComplete ? 0 : 15 }}
+          transition={{ delay: 1.5, duration: 0.5 }}
+          className={`mt-8 px-7 py-3 rounded-full font-medium text-base transition-all duration-300 ${
+            selectedTags.length > 0
+              ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-md hover:shadow-lg hover:scale-[1.02]'
+              : 'bg-gray-800 text-white hover:bg-gray-700'
+          }`}
+        >
+          Do the work for me →
+        </motion.button>
+
         {/* Subtle scroll indicator */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: isTypingComplete ? 1 : 0 }}
-          transition={{ delay: 1.5, duration: 0.6 }}
-          className="mt-16"
+          transition={{ delay: 1.8, duration: 0.6 }}
+          className="mt-12"
         >
           <motion.div
             animate={{ y: [0, 8, 0] }}
